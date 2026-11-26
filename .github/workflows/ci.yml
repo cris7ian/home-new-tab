@@ -1,0 +1,78 @@
+name: CI and deploy
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: Test and build
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '24'
+          package-manager-cache: false
+      - run: python3 -m unittest discover -s experiments
+      - run: python3 experiments/build_globe.py
+
+  deploy:
+    name: Deploy to production-server
+    needs: check
+    if: github.repository == 'cris7ian/home-new-tab' && github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    runs-on: [self-hosted, Linux, X64, home-new-tab-deploy]
+    timeout-minutes: 5
+    concurrency:
+      group: home-new-tab-production
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - run: python3 experiments/build_globe.py
+      - name: Publish the current main commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+          DEPLOY_SHA: ${{ github.sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          target="$HOME/Developer/local-almanac/public"
+          host=home.salsaparapizza.com
+          stage=$(mktemp -d "${target%/*}/.home-deploy.XXXXXXXX")
+          trap 'rm -r -- "$stage"' EXIT
+          test "$(stat -c %d "$stage")" = "$(stat -c %d "$target")"
+          install -m 0644 experiments/preview-local/globe.html "$stage/index.html"
+          install -m 0644 experiments/store/privacy.html "$stage/privacy.html"
+          printf '{"commit":"%s"}\n' "$DEPLOY_SHA" > "$stage/deployment.json"
+          chmod 0644 "$stage/deployment.json"
+          latest=$(gh api repos/cris7ian/home-new-tab/git/ref/heads/main --jq .object.sha)
+          if [[ "$latest" != "$DEPLOY_SHA" ]]; then
+            echo 'A newer main commit exists; skipping deployment.'
+            exit 0
+          fi
+          # The dashboard inlines its runtime assets. Switch the dashboard last.
+          mv -T "$stage/privacy.html" "$target/privacy.html"
+          mv -T "$stage/index.html" "$target/index.html"
+          origin() {
+            curl --fail --silent --show-error --noproxy '*' --max-time 10 \
+              -H "Host: $host" "http://127.0.0.1:8080$1"
+          }
+          origin / | cmp - experiments/preview-local/globe.html
+          origin /privacy.html | cmp - experiments/store/privacy.html
+          mv -T "$stage/deployment.json" "$target/deployment.json"
+          origin /deployment.json | cmp - "$target/deployment.json"
+          echo "Deployed $DEPLOY_SHA"

@@ -4,4 +4,5 @@
 - Test with `uv run --with playwright python experiments/verify_globe.py --chromium /path/to/chromium` while the documented loopback preview server runs. Test the actual `chrome://newtab/` override, not only the web preview.
 - Chrome rejects `geolocation` under `optional_permissions`. Keep it under `permissions`, but gate device readings on the user's in-app opt-in. Keep the permission disclosure and public privacy policy aligned.
 - Keep the manual install ZIP (`extension/` wrapper) and Chrome Web Store ZIP (root `manifest.json`) separate. A GitHub release does not submit a Store update.
-- On production-server, test the web artifact before atomically replacing `public/index.html`. Check served bytes over public HTTPS after deploying. Publish `experiments/store/privacy.html` at `/privacy.html` when privacy behavior changes.
+- Push to `main` to deploy the web artifact and privacy policy through GitHub Actions. For a manual redeploy, dispatch `.github/workflows/ci.yml` on `main`.
+- Check the deployed commit at `/deployment.json` over public HTTPS. The `public/` directory on production-server is live; do not build into it.

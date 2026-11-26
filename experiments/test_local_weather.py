@@ -219,7 +219,7 @@ const search = async (page) => {
   await flush();
   assert.equal(offline.text('place-name'), 'Current location');
   assert.equal(offline.text('weather-condition'), 'Weather unavailable');
-  assert.equal(offline.text('sunrise'), '6:00 AM');
+  assert.equal(offline.text('sunrise'), '06:00 AM');
   assert.equal(offline.sunStarts.at(-1), 0, 'offline sun uses the UTC device time zone');
   assert.deepEqual(offline.observers.at(-1), [37.77, -122.42]);
 

@@ -44,9 +44,11 @@ The website does not change Chrome settings. The installed extension replaces Ch
 
 `https://home.salsaparapizza.com/` serves `public/` through production-server's Caddy origin. The site was registered with `newsite home --from [production-directory]`.
 
-**`public/` is live.** Verify `experiments/preview-local/globe.html` before atomically replacing the live `public/index.html`. Do not run the legacy `build.py` against the production checkout.
+Push to `main` to update the website. GitHub Actions tests and builds the project before the `production-server-home-new-tab` runner publishes the dashboard and the [privacy policy](https://home.salsaparapizza.com/privacy.html). Pull requests run checks but do not deploy.
 
-The public [privacy policy](https://home.salsaparapizza.com/privacy.html) comes from `experiments/store/privacy.html`. Verify that URL after publishing a policy change.
+To redeploy the current `main`, run **CI and deploy → Run workflow** in GitHub Actions, or use `gh workflow run ci.yml --ref main`. Check the [deployed commit](https://home.salsaparapizza.com/deployment.json) after the run succeeds. This workflow does not publish Chrome extension releases.
+
+**`public/` is live.** Do not run the legacy `build.py` against the production checkout.
 
 ## Chrome Web Store
 
