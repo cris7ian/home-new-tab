@@ -4,8 +4,8 @@
 
 ## Install in Chrome on macOS
 
-1. Open the [v0.0.8 release](https://github.com/cris7ian/home-new-tab/releases/tag/v0.0.8) while signed in to GitHub.
-2. Download **`home-new-tab-v0.0.8.zip`**. Extract it to a folder you plan to keep.
+1. Open the [v1.0.0 release](https://github.com/cris7ian/home-new-tab/releases/tag/v1.0.0) while signed in to GitHub.
+2. Download **`home-new-tab-v1.0.0.zip`**. Extract it to a folder you plan to keep.
 3. Open `chrome://extensions` in your regular Chrome profile.
 4. Enable **Developer mode** and select **Load unpacked**.
 5. Select the extracted **`extension`** folder. It contains `manifest.json`.
@@ -52,13 +52,13 @@ To redeploy the current `main`, run **CI and deploy → Run workflow** in GitHub
 
 ## Chrome Web Store
 
-The current release has two ZIPs. `home-new-tab-v0.0.8.zip` is for manual installation and contains an `extension/` folder. `home-new-tab-web-store-0.0.8.zip` is for the Developer Dashboard and has `manifest.json` at the ZIP root. Uploading the ZIP to the dashboard and submitting it for review are separate from publishing a GitHub release.
+The current release has two ZIPs. `home-new-tab-v1.0.0.zip` is for manual installation and contains an `extension/` folder. `home-new-tab-web-store-1.0.0.zip` is for the Developer Dashboard and has `manifest.json` at the ZIP root. Uploading the ZIP to the dashboard and submitting it for review are separate from publishing a GitHub release.
 
 From the repo root, prepare a Store package and listing screenshots from a committed release:
 
 ```sh
 uv run --with playwright --with pillow python experiments/store/prepare.py \
-  --ref v0.0.8 --out experiments/artifacts/store-v0.0.8 \
+  --ref v1.0.0 --out experiments/artifacts/store-v1.0.0 \
   --chromium /path/to/chromium
 ```
 
