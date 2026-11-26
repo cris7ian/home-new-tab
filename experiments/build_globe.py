@@ -178,7 +178,11 @@ def globe_page(styles, scripts, appearance):
 
     source = re.sub(r'            <g class="sun-noon"[^\n]*</g>\n', '', source, count=1)
     marker_close = 'm17 17 2.8 2.8"/></g>'
-    moon_glyph = '<path class="sun-night-glyph" d="M4-10A10.8 10.8 0 1 0 10 5 9.1 9.1 0 0 1 4-10Z" fill="#171717" stroke="none"/>'
+    moon_glyph = '''<g class="sun-night-glyph" transform="scale(.22) translate(-64 -64)" stroke="none">
+      <circle cx="64" cy="64" r="49" fill="#ddd"/>
+      <use href="#moon-lit" fill="#171717"/>
+      <circle cx="64" cy="64" r="49" fill="none" stroke="#171717" stroke-width="4.5"/>
+    </g>'''
     source = change(source, marker_close, marker_close[:-4] + moon_glyph + '</g>')
     sun_times = re.search(r'          <div class="sun-times">[^\n]+', source)[0]
     source = change(source, sun_times, sun_times + '\n          <p id="night-progress"></p>')

@@ -17,7 +17,7 @@ Open **Settings → Theme** to choose **System**, **Light**, or **Dark**. System
 
 Open **Settings → City clocks** to add or remove cities from the bottom row. Your roster is saved in your browser.
 
-The Sun moves along the arc from sunrise to sunset. At night, a crescent shows progress from sunset to sunrise, with a countdown to sunrise. It represents elapsed night time; the Moon panel shows the actual phase. A city selected manually stays selected until you choose **Use my location** again. Nearby city labels are resolved on-device and are approximate.
+The Sun moves along the arc from sunrise to sunset. At night, the Moon icon shows the current lunar phase, and its position shows progress from sunset to sunrise. A countdown shows the time until sunrise. A city selected manually stays selected until you choose **Use my location** again. Nearby city labels are resolved on-device and are approximate.
 
 Keep the extracted folder on your Mac. To update an unpacked installation, replace its files without changing the folder path. Click **Reload** at `chrome://extensions` and accept the new location permission if Chrome asks. If Chrome disabled the extension during the update, enable it again. For a store installation, Chrome manages updates.
 

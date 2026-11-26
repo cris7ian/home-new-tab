@@ -249,7 +249,7 @@ html[data-presentation=center][data-theme=dark]{--quiet:#b7b7b7;--rule:#545454;-
 html[data-theme=dark][data-presentation=center] #clocks button:hover,html[data-theme=dark][data-presentation=center] #clocks button:focus-visible{background:var(--hover)}
 html[data-theme=dark] #city-results button:hover{background:var(--hover)}
 html[data-theme=dark] .solar-art{filter:invert(.88)}
-html[data-theme=dark] .solar-art #sun-marker circle:nth-of-type(2),html[data-theme=dark] .solar-art .sun-noon circle:not(.sun-halo),html[data-theme=dark] .solar-art>circle{fill:#ededed}
+html[data-theme=dark] .solar-art #sun-marker>circle:nth-of-type(2),html[data-theme=dark] .solar-art .sun-noon circle:not(.sun-halo),html[data-theme=dark] .solar-art>circle{fill:#ededed}
 html[data-theme=dark] :is(.locate,.search-row button){background:#ededed;color:#141414;border-color:#ededed}
 html[data-theme=dark] :is(.locate,.search-row button):hover{background:#ccc}
 #theme{width:100%;min-height:44px;padding:0 8px;background:var(--paper);color:var(--ink);border:1px solid var(--rule);border-radius:0;font:inherit}
