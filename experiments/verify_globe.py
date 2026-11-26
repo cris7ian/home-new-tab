@@ -235,7 +235,8 @@ def configurable_clocks(page, peer=None):
     expect(kathmandu.locator('.clock-time')).to_have_text(re.compile(r'^0?5:45 PM$'))
     with page.expect_request(lambda req: 'latitude=27.72' in req.url and 'longitude=85.32' in req.url):
         kathmandu.click()
-    expect(page.locator('#place-name')).to_contain_text('Kathmandu')
+    expect(page.locator('#place-name')).to_have_text('Kathmandu')
+    expect(page.locator('#weather-place')).to_have_attribute('aria-label', 'Change weather location: Kathmandu, Nepal')
     expect(page.locator('#weather-temp')).to_have_text('19')
     page.locator('#settings-open').click()
     page.get_by_role('button', name='Remove Kathmandu, Nepal').click()
@@ -438,6 +439,7 @@ def geo_sun_regression(browser, errors):
     page.locator('#city-query').fill('Longyearbyen')
     page.locator('#city-search button[type=submit]').click()
     page.get_by_role('button', name='Longyearbyen, Svalbard and Jan Mayen').click()
+    expect(page.locator('#place-name')).to_have_text('Longyearbyen')
     expect(countdown).to_have_text('No complete solar cycle nearby')
     expect(sun).to_be_hidden()
     expect(sunrise).to_have_text('—')

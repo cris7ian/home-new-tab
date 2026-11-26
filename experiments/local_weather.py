@@ -75,6 +75,8 @@ def exploring_weather(js: str) -> str:
     js = _replace(js, '    let explored = null;', '    let explored = null;\n    const displayedPlace = () => explored || home;')
     js = _replace(js, '        explored = city;\n        renderGlobe(true);', '        explored = city;\n        renderGlobe(true);\n        switchForecast();')
     js = _replace(js, '      const label = home?.label || home?.name;', '      const view = displayedPlace();\n      const label = view?.label || view?.name;')
+    js = _replace(js, "      write($('place-name'), label || 'Set location');",
+                  "      write($('place-name'), view?.name || 'Set location');")
     js = _replace(js, '''      weatherRequest?.abort();
       home = next;
       if (explicit) explored = null;

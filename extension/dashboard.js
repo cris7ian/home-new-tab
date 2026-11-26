@@ -130,7 +130,7 @@
     function renderHome() {
       const view = displayedPlace();
       const label = view?.label || view?.name;
-      write($('place-name'), label || 'Set location');
+      write($('place-name'), view?.name || 'Set location');
       $('weather-place').setAttribute('aria-label', label ? `Change weather location: ${label}` : 'Set weather location');
       write($('weather-condition'), label ? '' : 'Location not set');
     }
