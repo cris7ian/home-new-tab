@@ -78,6 +78,22 @@ def status(page):
     expect(page.locator('#iss-status')).to_be_empty()
 
 
+def globe_focus(page):
+    globe = page.locator('#globe')
+    globe.click()
+    expect(globe).to_be_focused()
+    expect(globe).to_have_css('outline-style', 'none')
+    page.keyboard.press('ArrowRight')
+    expect(globe).to_have_css('outline-style', 'solid')
+    globe.click()
+    expect(globe).to_have_css('outline-style', 'none')
+    page.keyboard.press('Tab')
+    expect(page.locator('#globe-home')).to_be_focused()
+    page.keyboard.press('Shift+Tab')
+    expect(globe).to_be_focused()
+    expect(globe).to_have_css('outline-style', 'solid')
+
+
 def leap_year(browser):
     page = browser.new_page(viewport={'width': 320, 'height': 640}, timezone_id='America/New_York')
     page.clock.install(time=datetime.fromisoformat('2028-02-29T23:59:45-05:00'))
@@ -521,6 +537,7 @@ def main():
                 check(second, 'grid')
                 expect(second.locator('#place-name')).to_contain_text('Madrid')
                 print('Unpacked MV3: Chrome new-tab override, system and saved themes, globe redraw, and persistent weather location')
+                globe_focus(second)
                 configurable_clocks(second, peer=page)
                 print('Unpacked MV3: configurable city clocks and synchronization across new tabs')
     assert not errors, errors

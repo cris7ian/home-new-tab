@@ -312,6 +312,8 @@
     canvas.addEventListener('pointerdown', e => {
       if (!e.isPrimary || e.button !== 0 || drag) return;
       canvas.setPointerCapture(e.pointerId);
+      // Keep arrow keys available after a click without showing the keyboard focus ring.
+      canvas.setAttribute('data-pointer-focus', '');
       canvas.focus({preventScroll: true});
       rotation = null;
       stopFollowing();
@@ -329,7 +331,9 @@
     for (const event of ['pointerup', 'pointercancel', 'lostpointercapture']) {
       canvas.addEventListener(event, e => { if (e.pointerId === drag?.id) drag = null; });
     }
+    canvas.addEventListener('blur', () => canvas.removeAttribute('data-pointer-focus'));
     canvas.addEventListener('keydown', e => {
+      canvas.removeAttribute('data-pointer-focus');
       if (e.altKey || e.ctrlKey || e.metaKey) return;
       if (e.key === 'Home') {
         e.preventDefault();
