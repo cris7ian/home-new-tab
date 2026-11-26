@@ -1,0 +1,6 @@
+/public/
+/.preview/
+/experiments/preview-local/
+/experiments/artifacts/
+__pycache__/
+.DS_Store

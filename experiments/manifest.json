@@ -1,0 +1,16 @@
+{
+  "manifest_version": 3,
+  "name": "Home New Tab",
+  "version": "1.0.0",
+  "description": "A monochrome new tab with an interactive Earth, ISS tracking, world clocks, weather, sunrise and moon phase.",
+  "chrome_url_overrides": {"newtab": "newtab.html"},
+  "optional_permissions": ["geolocation"],
+  "host_permissions": [
+    "https://api.open-meteo.com/*",
+    "https://geocoding-api.open-meteo.com/*",
+    "https://api.wheretheiss.at/*"
+  ],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'none'; connect-src 'self' https://api.open-meteo.com https://geocoding-api.open-meteo.com https://api.wheretheiss.at;"
+  }
+}

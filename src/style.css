@@ -1,0 +1,47 @@
+:root{--paper:#fafafa;--ink:#131313;--quiet:#5c5c5c;--rule:#c9c9c9;--faint:#e0e0e0;--display:'Bodoni Moda',Georgia,serif;--mono:'DM Mono',ui-monospace,monospace}
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font:14px/1.45 var(--mono);font-variant-numeric:tabular-nums}
+button,input{font:inherit;color:inherit}button{cursor:pointer}button:disabled{cursor:default}button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid var(--ink);outline-offset:3px}
+[hidden]{display:none!important}
+.sheet{width:min(calc(100% - 112px),1280px);margin-inline:auto;padding:33px 0 max(12px,env(safe-area-inset-bottom))}
+.masthead{display:flex;align-items:center;justify-content:flex-end;min-height:41px;padding-bottom:13px;border-bottom:1px solid var(--ink)}
+.eyebrow,.figure-index,.credits{font-size:11px;line-height:1.4;letter-spacing:.13em;text-transform:uppercase;font-weight:400}
+.zone{color:var(--quiet);text-align:right;overflow-wrap:anywhere}
+.date-line{display:flex;justify-content:space-between;align-items:flex-end;gap:24px;padding:27px 0 22px}
+.date-meta{display:flex;align-items:center;gap:10px;color:var(--quiet)}
+.separator{width:11px;height:1px;background:#898989}
+h1{font:500 clamp(57px,8.1vw,120px)/.96 var(--display);margin:9px 0 0;letter-spacing:-.07em;white-space:nowrap}
+h1 em{font-weight:500;letter-spacing:-.073em}
+.local-time{font:500 clamp(35px,4.45vw,62px)/.95 var(--display);letter-spacing:-.065em;white-space:nowrap;margin-bottom:4px}
+.observatory{display:grid;grid-template-columns:minmax(0,2.2fr) minmax(285px,1fr);border-top:1px solid var(--ink);border-bottom:1px solid var(--ink)}
+.atlas{min-width:0;padding:0 27px 14px 0;border-right:1px solid var(--rule);display:flex;flex-direction:column}
+.section-line{display:flex;align-items:center;justify-content:space-between;min-height:49px;gap:12px}.section-line h2{margin:0}.figure-index{color:#636363;letter-spacing:.035em}
+.map-frame{margin:auto 0;position:relative;isolation:isolate;border:1px solid var(--rule);padding:9px 8px;background:#f4f4f4}
+.world-map,.map-frame>svg{display:block;width:100%;height:auto}
+.pin{fill:#343434;stroke:var(--paper);stroke-width:.9}.pin.active{stroke:#111;fill:#fff;stroke-width:1.2}.pin circle{vector-effect:non-scaling-stroke}
+.clock-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));margin-top:16px;border-top:1px solid var(--rule)}
+.clock-grid button{position:relative;display:grid;grid-template-columns:1fr auto;gap:2px;min-height:60px;border:0;border-bottom:1px solid var(--faint);border-right:1px solid var(--faint);background:transparent;text-align:left;padding:8px 9px;align-items:end}
+.clock-grid button:nth-child(4n){border-right:0}.clock-grid button:nth-last-child(-n+4){border-bottom:0}
+.clock-grid button:hover,.clock-grid button[aria-pressed=true]{background:#ededed}
+.clock-grid button[aria-pressed=true]::after{content:'';width:4px;height:4px;background:var(--ink);position:absolute;top:11px;right:9px;border-radius:50%}
+.clock-city{grid-column:1/-1;font-size:10px;line-height:1.1;letter-spacing:.045em;text-transform:uppercase}
+.clock-time{font:500 23px/1 var(--display);letter-spacing:-.04em}.clock-offset{font-size:9px;letter-spacing:-.055em;color:var(--quiet);white-space:nowrap;align-self:end}
+.sky{min-width:0;display:grid;grid-template-rows:auto auto 1fr}.sky>section{min-width:0;padding:0 0 10px 25px}.sky>section+section{border-top:1px solid var(--rule)}
+.weather-row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:-5px}
+.temperature{display:flex;align-items:flex-start;gap:5px;font:500 clamp(54px,5.45vw,76px)/.99 var(--display);letter-spacing:-.07em}.degrees{font:400 14px/1 var(--mono);letter-spacing:-.02em;margin-top:12px}
+#weather-icon{width:54px;height:54px;margin-right:5px;flex:none}
+.weather-meta{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:44px;font-size:11px}.weather-meta>span{color:var(--quiet)}
+#weather-place{display:flex;align-items:center;gap:4px;min-width:0;max-width:55%;padding:0 0 0 5px;min-height:44px;background:none;border:0;text-align:right;justify-content:end}#weather-place svg{flex:none}#place-name{overflow-wrap:anywhere}#weather-place:hover span{text-decoration:underline;text-underline-offset:3px}
+.solar-art{display:block;width:100%;height:auto;max-height:109px;margin-top:-2px}.solar-art:has(#sun-marker:not([visibility=hidden])) .sun-noon{display:none}
+.sun-times{display:flex;justify-content:space-between;margin-top:-3px;padding-bottom:5px}.sun-times>div{display:grid;gap:3px}.sun-times>div:last-child{text-align:right}.sun-times .eyebrow,.moon-illuminated{letter-spacing:.08em;color:var(--quiet);font-size:10px}.sun-times time{font:500 26px/1 var(--display);letter-spacing:-.035em}
+.moon-row{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:-6px;min-height:96px}.moon-phase{font:500 clamp(24px,2.85vw,36px)/.98 var(--display);letter-spacing:-.055em;text-wrap:balance}.moon-illuminated{margin-top:8px}.lunar-art{display:block;width:96px;height:96px;flex:none}
+.credits{padding-top:10px;text-align:right;font-size:9px;letter-spacing:.07em}.credits a{color:var(--quiet);text-decoration-thickness:1px;text-underline-offset:2px}
+#location-dialog{border:1px solid var(--ink);background:var(--paper);color:var(--ink);width:min(440px,calc(100% - 36px));padding:19px 22px 22px;margin:auto;max-height:calc(100dvh - 36px)}
+#location-dialog::backdrop{background:#0008}.dialog-title{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--rule);margin-bottom:12px}.dialog-title h2{font:500 36px/1 var(--display);letter-spacing:-.045em;margin:0}.dialog-title button{border:0;background:none;font-size:25px;width:44px;height:44px}
+.locate,.search-row button{min-height:44px;background:#141414;color:#fafafa;border:1px solid #141414;padding:0 12px}.locate:hover,.search-row button:hover{background:#383838}.locate:disabled{opacity:.6}
+#city-search{margin-top:16px}#city-search label{display:block;font-size:11px;margin-bottom:5px}.search-row{display:flex;gap:5px}.search-row input{min-width:0;flex:1;padding:0 8px;background:transparent;border:1px solid var(--rule);font-size:16px;border-radius:0}
+#location-status{font-size:12px;color:var(--quiet);margin:10px 0 0}#location-status:empty,#city-results:empty{display:none}#city-results{list-style:none;padding:0;margin:12px 0 0}#city-results button{display:block;text-align:left;min-height:44px;padding:6px 4px;width:100%;background:none;border:0;border-top:1px solid var(--faint)}#city-results button:hover{background:#ededed}
+@media(max-width:1080px){.sheet{width:calc(100% - 72px)}.atlas{padding-right:19px}.sky>section{padding-left:19px}.clock-offset{font-size:8px}.clock-grid button{padding-inline:7px}.clock-grid button[aria-pressed=true]::after{right:7px}}
+@media(max-width:790px){.sheet{width:calc(100% - 52px);padding-top:21px}.observatory{grid-template-columns:1fr}.atlas{border-right:0;padding:0 0 10px}.sky{border-top:1px solid var(--ink);grid-template-columns:repeat(3,minmax(0,1fr));grid-template-rows:auto}.sky>section{padding:0 12px 8px}.sky>section:first-child{padding-left:0}.sky>section:last-child{padding-right:0}.sky>section+section{border-top:0;border-left:1px solid var(--rule)}.solar-art{margin:10px 0 4px}.moon-row{flex-wrap:wrap-reverse}.lunar-art{width:67px;height:67px}.moon-phase{font-size:25px}}
+@media(max-width:565px){.sheet{width:auto;margin:0 max(19px,env(safe-area-inset-right)) 0 max(19px,env(safe-area-inset-left));padding-top:max(16px,env(safe-area-inset-top))}.masthead{min-height:37px;padding-bottom:9px}.zone{font-size:9px;letter-spacing:.075em}.date-line{padding:19px 0 15px;gap:8px;display:grid;grid-template-columns:1fr auto;align-items:start}.date-block{display:contents}.date-meta{grid-column:1;grid-row:1;padding-top:4px}.local-time{grid-column:2;grid-row:1;font-size:26px;margin:0}.date-line h1{grid-column:1/-1;grid-row:2;font-size:clamp(42px,13vw,71px);margin:0;white-space:normal}.section-line{min-height:42px}.map-frame{padding:5px 4px}.clock-grid{grid-template-columns:repeat(2,minmax(0,1fr));margin-top:10px}.clock-grid button{min-height:47px;padding:5px 8px}.clock-time{font-size:21px}.clock-offset{font-size:9px}.clock-grid button:nth-child(2n){border-right:0}.clock-grid button:nth-last-child(-n+4){border-bottom:1px solid var(--faint)}.clock-grid button:nth-last-child(-n+2){border-bottom:0}.sky{grid-template-columns:1fr}.sky>section,.sky>section:first-child,.sky>section:last-child{padding:0 0 9px}.sky>section+section{border-left:0;border-top:1px solid var(--rule)}.temperature{font-size:59px}.solar-art{margin:0;max-height:116px}.moon-row{flex-wrap:nowrap;min-height:87px}.lunar-art{width:84px;height:84px}.moon-phase{font-size:32px}}
+@media(forced-colors:active){.clock-grid button[aria-pressed=true]{outline:1px solid currentColor;outline-offset:-2px}}
