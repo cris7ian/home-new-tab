@@ -8,3 +8,6 @@ html[data-theme=dark] .solar-art #sun-marker circle:nth-of-type(2),html[data-the
 html[data-theme=dark] :is(.locate,.search-row button){background:#ededed;color:#141414;border-color:#ededed}
 html[data-theme=dark] :is(.locate,.search-row button):hover{background:#ccc}
 #theme{width:100%;min-height:44px;padding:0 8px;background:var(--paper);color:var(--ink);border:1px solid var(--rule);border-radius:0;font:inherit}
+#sun-marker .sun-night-glyph{display:none}
+#sun-marker[data-state=night] > :not(.sun-night-glyph){display:none}
+#sun-marker[data-state=night] .sun-night-glyph{display:block}

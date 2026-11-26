@@ -300,19 +300,31 @@
     const geolocationPermission = { permissions: ['geolocation'] };
     const isExtension = Boolean(globalThis.chrome?.runtime?.id);
 
-    function locateDevice(current, success, failure) {
+    const locationModeKey = 'home-new-tab.location-mode.v1';
+    function locationMode(value) {
+      try {
+        if (value) localStorage.setItem(locationModeKey, value);
+        else return localStorage.getItem(locationModeKey);
+      } catch { /* Storage may not be available. */ }
+    }
+
+    function locateDevice(current, success, failure, precise = false) {
       try {
         if (!navigator.geolocation) { failure(); return; }
-        navigator.geolocation.getCurrentPosition(({ coords }) => {
+        navigator.geolocation.getCurrentPosition(async ({ coords }) => {
           if (!current()) return;
           if (!validCoordinates(coords.latitude, coords.longitude)) { failure(); return; }
-          success({ name: 'Current location', lat: Number(coords.latitude.toFixed(2)),
-            lon: Number(coords.longitude.toFixed(2)), zone: null, gps: true });
-        }, failure, { enableHighAccuracy: false, timeout: 10_000, maximumAge: 5 * minute });
+          const {latitude, longitude, accuracy} = coords;
+          const city = await window.HomeNearbyCity?.(latitude, longitude, accuracy);
+          if (!current()) return;
+          const name = city ? `Near ${city}` : accuracy > 8_000 ? 'Approximate location' : 'Current location';
+          success({ name, lat: Number(latitude.toFixed(2)), lon: Number(longitude.toFixed(2)), zone: null, gps: true });
+        }, failure, { enableHighAccuracy: precise, timeout: 12_000, maximumAge: precise ? 0 : 2 * minute });
       } catch { failure(); }
     }
 
     async function locateIfAllowed() {
+      if (locationMode() === 'manual') return;
       const version = locationVersion;
       const current = () => version === locationVersion && !dialog.open;
       let granted;
@@ -344,9 +356,10 @@
         } catch { failure(); return; }
       }
       locateDevice(current, (next) => {
+        locationMode('device');
         selectHome(next, true);
         closeLocation();
-      }, failure);
+      }, failure, true);
     });
 
     $('city-search').addEventListener('submit', async (event) => {
@@ -379,6 +392,7 @@
           button.addEventListener('click', () => {
             if (!current()) return;
             const manual = { name: item.name, label, lat: item.latitude, lon: item.longitude, zone: item.timezone };
+            locationMode('manual');
             saveManualHome(manual);
             selectHome(manual, true);
             closeLocation();
@@ -437,7 +451,8 @@
         if (set !== null) windows.push([event(set, +1, -1), set]);
         if (rise !== null) windows.push([rise, event(rise, -1, 1)]);
       }
-      return { civilDay, rise, set, windows };
+      const nightWindows = [[event(begin, -1, -2), rise], [set, event(end, +1, 2)]];
+      return { civilDay, rise, set, windows, nightWindows, begin, end, observer };
     }
 
     function paintSun(now) {
@@ -449,19 +464,45 @@
           sun = { ...sunForDay(civilDay, { ...view, zone }), zone };
         }
       }
-      const label = (instant) => instant == null ? '—' : time(instant, zone);
+      const label = instant => instant == null ? '—' : time(instant, zone);
       paintTime($('sunrise'), label(sun?.rise));
       paintTime($('sunset'), label(sun?.set));
-      const ms = now.getTime();
-      const window = sun?.windows.find(([rise, set]) => rise !== null && set !== null && rise <= ms && ms <= set);
-      if (window) {
-        const t = (ms - window[0]) / (window[1] - window[0]);
-        // Quadratic Bézier: M 20 78 Q 160 -40 300 78, with time linear in x.
-        marker.setAttribute('transform', `translate(${(20 + 280 * t).toFixed(2)} ${(78 - 236 * t * (1 - t)).toFixed(2)})`);
-        marker.removeAttribute('visibility');
-      } else {
+      if (!sun) {
         marker.setAttribute('visibility', 'hidden');
+        marker.removeAttribute('data-state');
+        return;
       }
+      const ms = now.getTime();
+      const contains = ([a, b]) => a !== null && b !== null && b > a && a <= ms && ms <= b;
+      const day = sun.windows.find(contains);
+      const night = sun.nightWindows.find(contains);
+      if (day) {
+        const [a, b] = day;
+        const t = (ms - a) / (b - a);
+        showCursor(t, 'day', Math.max(17, 236 * t * (1 - t)));
+      } else if (night) {
+        // Mark the relevant end of the daylight arc; do not plot a fake
+        // above-horizon position for a Sun we cannot currently see.
+        showCursor(night[1] === sun.rise ? 0 : 1, 'night', 17);
+      } else {
+        // Polar days and nights can have no crossing for weeks.
+        const eq = Astronomy.Equator(Astronomy.Body.Sun, now, sun.observer, true, true);
+        const hor = Astronomy.Horizon(now, sun.observer, eq.ra, eq.dec, 'normal');
+        if (hor.altitude < 0) {
+          marker.setAttribute('visibility', 'hidden');
+          marker.removeAttribute('data-state');
+          return;
+        }
+        const t = 0.5 - Math.sin(hor.azimuth * Math.PI / 180) * 0.38;
+        showCursor(t, 'day', 17 + 35 * Math.min(1, hor.altitude / 60));
+      }
+    }
+
+    function showCursor(t, state, height) {
+      const x = 20 + 280 * t;
+      marker.setAttribute('transform', `translate(${x.toFixed(2)} ${(78 - height).toFixed(2)})`);
+      marker.setAttribute('data-state', state);
+      marker.removeAttribute('visibility');
     }
 
     function paintMoon(now) {

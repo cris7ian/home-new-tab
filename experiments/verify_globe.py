@@ -248,6 +248,41 @@ def stable_clock(browser):
     page.close()
 
 
+def geo_sun_regression(browser, errors):
+    context = browser.new_context(timezone_id='Europe/Madrid',
+        geolocation={'latitude': 41.3874, 'longitude': 2.1686, 'accuracy': 30}, permissions=['geolocation'])
+    page = context.new_page()
+    collect_errors(page, errors)
+    page.clock.install(time=datetime.fromisoformat('2026-11-26T20:00:00+01:00'))
+    with page.expect_request(lambda request: 'latitude=41.39' in request.url and 'longitude=2.17' in request.url, timeout=16000):
+        assert page.goto(f'{BASE}globe.html').ok
+    expect(page.locator('#place-name')).to_have_text('Near Barcelona')
+    sun = page.locator('#sun-marker')
+    expect(sun).to_have_attribute('data-state', 'night')
+    expect(sun).to_be_visible()
+    expect(sun.locator('.sun-night-glyph')).to_be_visible()
+    expect(sun.locator('.sun-halo')).to_be_hidden()
+    expect(sun).to_have_attribute('transform', 'translate(300.00 61.00)')
+    page.clock.fast_forward(3_600_000)
+    expect(sun).to_have_attribute('transform', 'translate(300.00 61.00)')
+    page.clock.fast_forward(9 * 3_600_000)
+    expect(sun).to_have_attribute('data-state', 'night')
+    expect(sun).to_have_attribute('transform', 'translate(20.00 61.00)')
+    page.clock.fast_forward(6 * 3_600_000)
+    expect(sun).to_have_attribute('data-state', 'day')
+    expect(sun.locator('.sun-night-glyph')).to_be_hidden()
+    expect(sun.locator('.sun-halo')).to_be_visible()
+    assert float(sun.get_attribute('transform').split()[1].strip(')')) < 78
+    first = sun.get_attribute('transform')
+    page.clock.fast_forward(3_600_000)
+    expect(sun).not_to_have_attribute('transform', first)
+    manual_weather(page)
+    page.reload()
+    expect(page.locator('#place-name')).to_contain_text('Madrid')
+    assert page.evaluate('localStorage.getItem("home-new-tab.location-mode.v1")') == 'manual'
+    context.close()
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--chromium', type=Path)
@@ -310,6 +345,8 @@ def main():
         print('Clock layouts: three placements, desktop and mobile fit, city weather/sun and return to home')
         stable_clock(browser)
         print('Monospace clock: no date or time layout shift from 09:59 to 10:00')
+        geo_sun_regression(browser, errors)
+        print('Location and sun: nearby offline city label, night endpoints, daytime movement and saved manual override')
         browser.close()
         extension = str(HERE.parent / 'extension')
         with TemporaryDirectory(prefix='home-chrome-') as profile:

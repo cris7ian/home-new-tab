@@ -107,7 +107,33 @@ def exploring_weather(js: str) -> str:
     js = _replace(js, '      if (!home || (!force', '      if (!displayedPlace() || (!force')
     js = _replace(js, '      const target = home;', '      const target = displayedPlace();')
     js = _replace(js, '      const zone = home?.zone || deviceZone();\n      if (home) {', '      const view = displayedPlace();\n      const zone = view?.zone || deviceZone();\n      if (view) {')
-    return _replace(js, '{ ...home, zone }', '{ ...view, zone }')
+    js = _replace(js, '{ ...home, zone }', '{ ...view, zone }')
+    js = _replace(js, '''    function locateDevice(current, success, failure) {''', '''    const locationModeKey = 'home-new-tab.location-mode.v1';
+    function locationMode(value) {
+      try {
+        if (value) localStorage.setItem(locationModeKey, value);
+        else return localStorage.getItem(locationModeKey);
+      } catch { /* Storage may not be available. */ }
+    }
+
+    function locateDevice(current, success, failure, precise = false) {''')
+    js = _replace(js, '''        navigator.geolocation.getCurrentPosition(({ coords }) => {
+          if (!current()) return;
+          if (!validCoordinates(coords.latitude, coords.longitude)) { failure(); return; }
+          success({ name: 'Current location', lat: Number(coords.latitude.toFixed(2)),
+            lon: Number(coords.longitude.toFixed(2)), zone: null, gps: true });
+        }, failure, { enableHighAccuracy: false, timeout: 10_000, maximumAge: 5 * minute });''', '''        navigator.geolocation.getCurrentPosition(async ({ coords }) => {
+          if (!current()) return;
+          if (!validCoordinates(coords.latitude, coords.longitude)) { failure(); return; }
+          const {latitude, longitude, accuracy} = coords;
+          const city = await window.HomeNearbyCity?.(latitude, longitude, accuracy);
+          if (!current()) return;
+          const name = city ? `Near ${city}` : accuracy > 8_000 ? 'Approximate location' : 'Current location';
+          success({ name, lat: Number(latitude.toFixed(2)), lon: Number(longitude.toFixed(2)), zone: null, gps: true });
+        }, failure, { enableHighAccuracy: precise, timeout: 12_000, maximumAge: precise ? 0 : 2 * minute });''')
+    js = _replace(js, '    async function locateIfAllowed() {\n      const version', '    async function locateIfAllowed() {\n      if (locationMode() === \'manual\') return;\n      const version')
+    js = _replace(js, '        selectHome(next, true);\n        closeLocation();\n      }, failure);', "        locationMode('device');\n        selectHome(next, true);\n        closeLocation();\n      }, failure, true);")
+    return _replace(js, '            saveManualHome(manual);', "            locationMode('manual');\n            saveManualHome(manual);")
 
 
 HOME_STATE = """    function readManualHome() {

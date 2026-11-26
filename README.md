@@ -4,8 +4,8 @@
 
 ## Install in Chrome on macOS
 
-1. Open the [v0.0.2 release](https://github.com/cris7ian/home-new-tab/releases/tag/v0.0.2) while signed in to GitHub.
-2. Download **`home-new-tab-v0.0.2.zip`**. Extract it to a folder you plan to keep.
+1. Open the [v0.0.4 release](https://github.com/cris7ian/home-new-tab/releases/tag/v0.0.4) while signed in to GitHub.
+2. Download **`home-new-tab-v0.0.4.zip`**. Extract it to a folder you plan to keep.
 3. Open `chrome://extensions` in your regular Chrome profile.
 4. Enable **Developer mode** and select **Load unpacked**.
 5. Select the extracted **`extension`** folder. It contains `manifest.json`.
@@ -14,6 +14,8 @@
 Select a city clock to rotate the globe and view that city’s weather and sun. Select the target icon to return to your location, or select **ISS** to follow the station. In Weather, choose **Use my location** to let Chrome detect where you are, or pick a city manually. Chrome asks for location access only if you choose to use it. Incognito new tabs are not overridden.
 
 Open **Settings → Theme** to choose **System**, **Light**, or **Dark**. System follows your device appearance.
+
+The Sun moves along the arc in daylight. At night, a crescent marks the sunset or sunrise end. A city selected manually stays selected until you choose **Use my location** again. Nearby city labels are resolved on-device and are approximate.
 
 The folder must stay on your Mac. To update, replace its files with the newer version and click **Reload** at `chrome://extensions`.
 
@@ -46,6 +48,7 @@ This project has no server-side application or runtime build dependencies. It do
 
 - [Natural Earth](https://www.naturalearthdata.com/downloads/10m-cultural-vectors/timezones/) (public domain). Boundaries are a simplified reference layer; city clocks use the browser's timezone rules.
 - [Open-Meteo](https://open-meteo.com/) for weather and place search.
+- [GeoNames cities5000](https://download.geonames.org/export/dump/) ([CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)) for on-device nearby place labels. The bundled extract retains names and simplified coordinates.
 - [Astronomy Engine](https://github.com/cosinekitty/astronomy) 2.1.19 (MIT) for solar events and lunar phases.
 - [NASA’s Scientific Visualization Studio](https://svs.gsfc.nasa.gov/5001/) for the Lunar Reconnaissance Orbiter Moon mosaic. Resized and contrast-adjusted for the phase illustration.
 - [Bodoni Moda](https://fonts.google.com/specimen/Bodoni+Moda) and [DM Mono](https://fonts.google.com/specimen/DM+Mono), under the SIL Open Font License.

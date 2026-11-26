@@ -6,6 +6,7 @@ from pathlib import Path
 import re
 
 from local_weather import exploring_weather, local_weather
+from sun_cursor import solar_cursor
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent
@@ -122,6 +123,11 @@ def globe_page(styles, scripts):
     source = page('grid', styles, scripts, fixed=True)
     source = change(source, 'data-fixed-design="true"', 'data-fixed-design="true" data-presentation="center"')
     source = change(source, YEAR_MARKUP, '')
+
+    source = re.sub(r'            <g class="sun-noon"[^\n]*</g>\n', '', source, count=1)
+    marker_close = 'm17 17 2.8 2.8"/></g>'
+    moon_glyph = '<path class="sun-night-glyph" d="M4-10A10.8 10.8 0 1 0 10 5 9.1 9.1 0 0 1 4-10Z" fill="#171717" stroke="none"/>'
+    source = change(source, marker_close, marker_close[:-4] + moon_glyph + '</g>')
     clocks = '        <div id="clocks" class="clock-grid" aria-label="City clocks"></div>'
     source = change(source, clocks, '')
     source = change(source, '  </main>', clocks + '\n  </main>')
@@ -142,7 +148,7 @@ def globe_page(styles, scripts):
     source, count = re.subn(r'<svg class="lunar-art"[\s\S]*?</svg>', lambda _: moon, source)
     if count != 1:
         raise ValueError('Expected one Moon illustration')
-    source = change(source, 'Boundaries by Natural Earth.</p>', 'Boundaries by Natural Earth.</p><p>Moon mosaic by <a href="https://svs.gsfc.nasa.gov/5001/" target="_blank" rel="noopener noreferrer">NASA’s Scientific Visualization Studio</a>.</p>')
+    source = change(source, 'Boundaries by Natural Earth.</p>', 'Boundaries by Natural Earth.</p><p>Moon mosaic by <a href="https://svs.gsfc.nasa.gov/5001/" target="_blank" rel="noopener noreferrer">NASA’s Scientific Visualization Studio</a>. Nearby place labels use a reduced <a href="https://www.geonames.org/" target="_blank" rel="noopener noreferrer">GeoNames</a> gazetteer (<a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener noreferrer">CC BY 4.0</a>).</p>')
     source = change(source, 'aria-label="Data sources" title="Data sources"', 'aria-label="Settings" title="Settings"')
     source = change(source, '<details><summary>Data sources</summary>', '<label for="theme">Theme</label><select id="theme"><option value="system">System</option><option value="light">Light</option><option value="dark">Dark</option></select><details><summary>Data sources</summary>')
     return source
@@ -169,9 +175,10 @@ def main():
         if name_path.is_absolute() or '..' in name_path.parts or name_path.name in assets:
             raise ValueError(f'Invalid or duplicate globe asset: {name}')
         assets[name_path.name] = read(GLOBE / name_path)
-    assets['dashboard.js'] = app()
-    standalone_app = assets['dashboard.js']
-    assets['dashboard.js'] = exploring_weather(standalone_app)
+    standalone_app = app()
+    city_data = b64encode((HERE / 'cities5000.json.gz').read_bytes()).decode('ascii')
+    assets['nearby.js'] = change(read(HERE / 'nearby.js'), '/* @CITY_GZIP@ */', city_data)
+    assets['dashboard.js'] = solar_cursor(exploring_weather(standalone_app))
     for previous in ('solar.js', 'year.js'):
         (EXT / previous).unlink(missing_ok=True)
     style = css()
@@ -191,6 +198,7 @@ def main():
     for layout in ('shoulders', 'meridian', 'inline'):
         (PREVIEW / f'globe-{layout}.html').write_text(clock_page(f'<style>{centered_style}</style>', inline, layout) + footer, encoding='utf-8')
     (PREVIEW / 'globe.html').write_text(clock_page(f'<style>{centered_style}</style>', inline, 'meridian') + footer, encoding='utf-8')
+    del assets['nearby.js']
     assets['dashboard.js'] = standalone_app
     assets['year.js'] = read(HERE / 'year.js')
     inline = '\n'.join(f'<script>\n{value}\n</script>' for value in assets.values())
