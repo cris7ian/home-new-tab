@@ -6,14 +6,15 @@
   const chosen = new URLSearchParams(location.search).get('design');
   let stored;
   try { stored = localStorage.getItem(key); } catch { /* Storage can be disabled. */ }
-  const initial = [chosen, stored, root.dataset.design].find(value => designs.has(value)) || 'atlas';
+  const fixed = root.dataset.fixedDesign === 'true';
+  const initial = (fixed ? root.dataset.design : [chosen, stored, root.dataset.design].find(value => designs.has(value))) || 'grid';
   root.dataset.design = initial;
   const setup = () => {
     const open = document.getElementById('settings-open');
     const dialog = document.getElementById('settings');
     const select = document.getElementById('appearance');
-    select.value = initial;
-    select.addEventListener('change', () => {
+    if (select) select.value = initial;
+    select?.addEventListener('change', () => {
       if (!designs.has(select.value)) return;
       root.dataset.design = select.value;
       try { localStorage.setItem(key, select.value); } catch { /* Keep the in-tab selection. */ }

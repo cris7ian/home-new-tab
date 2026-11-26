@@ -19,3 +19,6 @@ html[data-design=grid]{--display:'Barlow Condensed','Arial Narrow',sans-serif;--
 html[data-design=orbital]{--globe-night:rgba(5,5,5,.70)}
 [data-design=orbital] .date-line h1,[data-design=orbital] .local-time,[data-design=orbital] .moon-phase{letter-spacing:-.055em}
 [data-design=orbital] .temperature,[data-design=grid] .temperature{letter-spacing:-.03em}
+.solar-art .sun-halo{transform-box:fill-box;transform-origin:center;animation:sun-breath 6s ease-in-out infinite}
+@keyframes sun-breath{0%,100%{opacity:.32;transform:scale(.94)}50%{opacity:.72;transform:scale(1.15)}}
+@media(prefers-reduced-motion:reduce){.solar-art .sun-halo{animation:none;opacity:.52}}

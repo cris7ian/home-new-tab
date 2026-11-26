@@ -14,6 +14,15 @@ DESIGNS = {'atlas': 'Newsreader', 'orbital': 'Space Grotesk', 'grid': 'Barlow Co
 BASE = 'http://127.0.0.1:4174/'
 
 
+def manual_weather(page):
+    page.locator('#weather-place').click()
+    page.locator('#city-query').fill('Madrid')
+    page.locator('#city-search button[type=submit]').click()
+    page.locator('#city-results button').filter(has_text=re.compile('Madrid.*Spain')).first.click(timeout=17000)
+    expect(page.locator('#place-name')).to_contain_text('Madrid')
+    expect(page.locator('#weather-temp')).to_have_text(NUMBER, timeout=17000)
+
+
 def collect_errors(page, errors):
     page.on('pageerror', lambda error: errors.append(str(error)))
     page.on('console', lambda message: errors.append(message.text) if message.type == 'error' and 'Content Security Policy' in message.text else None)
@@ -40,6 +49,7 @@ def check(page, design):
     assert page.evaluate("document.fonts.check('" + ('600' if design == 'grid' else '500') + " 32px \"" + DESIGNS[design] + "\"')")
     assert page.locator('#globe').evaluate('(el) => el.width > 150 && el.height > 150')
     assert re.search(r'\d', page.locator('#moon-percent').inner_text())
+    expect(page.locator('#solar-system')).to_be_visible()
 
 
 def status(page):
@@ -50,14 +60,20 @@ def status(page):
 def city_rotation(page):
     tokyo = page.get_by_role('button', name=re.compile('Tokyo'))
     before = page.locator('#globe').evaluate('(el) => el.toDataURL()')
+    local = page.locator('#place-name').inner_text()
     tokyo.click()
-    expect(page.locator('#place-name')).to_have_text('Tokyo')
+    expect(tokyo).to_have_attribute('aria-pressed', 'true')
+    expect(page.locator('#place-name')).to_have_text(local)
     page.wait_for_function('(before) => document.querySelector("#globe").toDataURL() !== before', arg=before, timeout=4000)
+    page.locator('#globe-home').click()
+    expect(tokyo).to_have_attribute('aria-pressed', 'false')
+    expect(page.locator('#place-name')).to_have_text(local)
 
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--chromium', type=Path)
+    parser.add_argument('--web-url', help='Also smoke test a deployed Grid page')
     args = parser.parse_args()
     browser_args = {'executable_path': str(args.chromium)} if args.chromium else {'channel': 'chromium'}
     ARTIFACTS.mkdir(exist_ok=True)
@@ -69,6 +85,7 @@ def main():
             page = desktop.new_page()
             collect_errors(page, errors)
             page.goto(f'{BASE}{design}.html?design={design}')
+            manual_weather(page)
             check(page, design)
             status(page)
             page.screenshot(path=ARTIFACTS / f'{design}-desktop.png', full_page=True)
@@ -80,11 +97,29 @@ def main():
             phone = mobile.new_page()
             collect_errors(phone, errors)
             phone.goto(f'{BASE}{design}.html?design={design}')
+            manual_weather(phone)
             check(phone, design)
             status(phone)
             phone.screenshot(path=ARTIFACTS / f'{design}-mobile.png', full_page=True)
             mobile.close()
             print(f'{design}: desktop, mobile, 12-hour labels, live data and city rotation')
+        for url in (f'{BASE}grid-release.html', args.web_url):
+            if not url:
+                continue
+            console_count = len(errors)
+            location = browser.new_context(viewport={'width': 390, 'height': 844},
+                has_touch=True, is_mobile=True, timezone_id='Europe/Madrid',
+                geolocation={'latitude': 41.3874, 'longitude': 2.1686}, permissions=['geolocation'])
+            page = location.new_page()
+            collect_errors(page, errors)
+            with page.expect_request(lambda r: 'latitude=41.39' in r.url and 'longitude=2.17' in r.url, timeout=17000):
+                assert page.goto(url).ok
+            expect(page.locator('#weather-temp')).to_have_text(NUMBER, timeout=17000)
+            check(page, 'grid')
+            city_rotation(page)
+            assert len(errors) == console_count
+            location.close()
+            print(f'{url}: Grid release, auto-location with prior permission and unchanged local weather during globe exploration')
         browser.close()
         extension = str(HERE.parent / 'extension')
         with TemporaryDirectory(prefix='home-chrome-') as profile:
@@ -100,11 +135,12 @@ def main():
                 page.wait_for_selector('#globe', timeout=15000)
                 assert page.evaluate('location.protocol') == 'chrome-extension:'
                 assert page.evaluate('Boolean(chrome.runtime.id)')
-                check(page, 'atlas')
+                manual_weather(page)
+                check(page, 'grid')
                 status(page)
-                page.get_by_role('button', name='Appearance and data sources').click()
-                page.locator('#appearance').select_option('orbital')
-                page.get_by_text('Data sources', exact=True).click()
+                city_rotation(page)
+                page.locator('#settings-open').click()
+                page.locator('#settings summary').click()
                 expect(page.get_by_role('link', name='Open-Meteo', exact=True)).to_be_visible()
                 page.keyboard.press('Escape')
                 second = ctx.new_page()
@@ -113,8 +149,9 @@ def main():
                 except Error as error:
                     if 'ERR_ABORTED' not in str(error):
                         raise
-                check(second, 'orbital')
-                print('Unpacked MV3: Chrome new-tab override, live data, sources panel, and persistent appearance')
+                check(second, 'grid')
+                expect(second.locator('#place-name')).to_contain_text('Madrid')
+                print('Unpacked MV3: Chrome new-tab override, fixed Grid, sources panel, and persistent weather location')
     assert not errors, errors
 
 

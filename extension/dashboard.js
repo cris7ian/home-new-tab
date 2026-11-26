@@ -4,7 +4,8 @@
   function start() {
     const $ = (id) => document.getElementById(id);
     const svgNS = 'http://www.w3.org/2000/svg';
-    const storageKey = 'local-almanac.place.v1';
+    const storageKey = 'local-almanac.manual-home.v1';
+    const legacyStorageKey = 'local-almanac.place.v1';
     const minute = 60_000;
     const day = 24 * 60 * minute;
     const cities = [
@@ -71,24 +72,26 @@
       return Number.isFinite(lat) && Math.abs(lat) <= 90 && Number.isFinite(lon) && Math.abs(lon) <= 180;
     }
 
-    function readPlace() {
-      try {
-        const saved = JSON.parse(localStorage.getItem(storageKey));
-        if (saved && typeof saved.name === 'string' && saved.name.trim() &&
-            validCoordinates(saved.lat, saved.lon) && (saved.gps === true || validZone(saved.zone))) {
-          return { ...saved, zone: validZone(saved.zone) ? saved.zone : null };
-        }
-      } catch { /* Storage can be disabled. */ }
-      // Use a preset only for a matching device time zone; otherwise use Madrid.
-      const zone = deviceZone();
-      return cities.find((city) => Intl.DateTimeFormat('en', { timeZone: city.zone })
-        .resolvedOptions().timeZone === zone) || madrid;
+    function readManualHome() {
+      for (const key of [storageKey, legacyStorageKey]) {
+        try {
+          const saved = JSON.parse(localStorage.getItem(key));
+          // Legacy clock picks had no label; only a city search supplied one.
+          if (saved && saved.gps !== true && typeof saved.name === 'string' && saved.name.trim() &&
+              typeof saved.label === 'string' && saved.label.trim() &&
+              validCoordinates(saved.lat, saved.lon) && validZone(saved.zone)) return saved;
+        } catch { /* Storage can be disabled or contain invalid data. */ }
+      }
+      return null;
     }
 
-    let place = readPlace();
+    let home = readManualHome();
+    let explored = null;
+    const defaultView = cities.find((city) => Intl.DateTimeFormat('en', { timeZone: city.zone })
+      .resolvedOptions().timeZone === deviceZone()) || madrid;
 
-    function savePlace() {
-      try { localStorage.setItem(storageKey, JSON.stringify(place)); } catch { /* Keep the in-page selection. */ }
+    function saveManualHome(manual) {
+      try { localStorage.setItem(storageKey, JSON.stringify(manual)); } catch { /* Keep the in-page selection. */ }
     }
 
     function html(tag, className, text) {
@@ -110,56 +113,44 @@
       const clockTime = html('span', 'clock-time');
       const offset = html('span', 'clock-offset');
       button.append(html('span', 'clock-city', city.name), clockTime, offset);
-      button.addEventListener('click', () => selectPlace(city));
+      button.addEventListener('click', () => {
+        explored = city;
+        renderGlobe(true);
+      });
       return { city, button, clockTime, offset };
     });
     $('clocks').replaceChildren(...clocks.map(({ button }) => button));
 
-    function matchingCity(location) {
-      return cities.find((city) => city.name === location.name &&
+    function renderHome() {
+      const label = home?.label || home?.name;
+      write($('place-name'), label || 'Set location');
+      $('weather-place').setAttribute('aria-label', label ? `Change weather location: ${label}` : 'Set weather location');
+      write($('weather-condition'), label ? '' : 'Location not set');
+    }
+
+    function renderGlobe(force = false) {
+      const selected = explored || home;
+      const match = (location) => location && cities.find((city) => city.name === location.name &&
         Math.abs(city.lat - location.lat) < 0.1 && Math.abs(city.lon - location.lon) < 0.1);
-    }
-
-    function renderPlace() {
-      const label = place.label || place.name;
-      write($('place-name'), label);
-      $('weather-place').setAttribute('aria-label', `Change weather location: ${label}`);
-      const selected = matchingCity(place);
+      const selectedCity = match(selected);
       for (const { city, button } of clocks) {
-        button.classList.toggle('active', city === selected);
-        button.setAttribute('aria-pressed', String(city === selected));
+        button.classList.toggle('active', city === selectedCity);
+        button.setAttribute('aria-pressed', String(city === selectedCity));
       }
-      const points = cities.includes(selected) ? cities : [...cities, place];
-      const active = selected || place;
-      const pins = [];
-      for (const point of points) {
-        const position = { cx: (point.lon + 180) * 2, cy: (85 - point.lat) * 2 };
-        const pin = svg('circle', { ...position, r: 2.6, class: 'pin', 'vector-effect': 'non-scaling-stroke' });
-        const title = svg('title', {});
-        title.textContent = point.label || point.name;
-        pin.append(title);
-        if (point === active) {
-          const ring = svg('circle', { ...position, r: 6.5, class: 'pin active',
-            'vector-effect': 'non-scaling-stroke' });
-          ring.style.fill = 'none';
-          ring.append(title.cloneNode(true));
-          pins.push(ring);
-        }
-        pins.push(pin);
-      }
-      $('map-pins').replaceChildren(...pins);
-      window.AlmanacGlobe?.setPlace(place, cities);
+      const pins = home && !match(home) ? [...cities, home] : cities;
+      window.AlmanacGlobe?.setPlace(selected || defaultView, pins);
+      if (force) window.AlmanacGlobe?.centerPlace?.();
     }
 
-    function selectPlace(next) {
+    function selectHome(next, explicit = false) {
       weatherRequest?.abort();
-      place = next;
-      savePlace();
+      home = next;
+      if (explicit) explored = null;
       sun = null;
-      renderPlace();
+      renderHome();
+      renderGlobe(explicit);
       paintSun(new Date());
       write($('weather-temp'), '—');
-      write($('weather-condition'), '');
       weatherIcon.replaceChildren();
       refreshWeather(true);
     }
@@ -214,9 +205,9 @@
     }
 
     async function refreshWeather(force = false) {
-      if (!force && (weatherRequest || Date.now() < weatherDue || document.hidden)) return;
+      if (!home || (!force && (weatherRequest || Date.now() < weatherDue || document.hidden))) return;
       const controller = new AbortController();
-      const target = place;
+      const target = home;
       weatherRequest = controller;
       const url = new URL('https://api.open-meteo.com/v1/forecast');
       url.search = new URLSearchParams({
@@ -228,7 +219,6 @@
         if (weatherRequest !== controller) return;
         if (target.gps && validZone(data.timezone) && data.timezone !== target.zone) {
           target.zone = data.timezone;
-          savePlace();
           sun = null;
           paintSun(new Date());
         }
@@ -263,7 +253,7 @@
       dialog.close();
     }
 
-    $('weather-place').addEventListener('click', () => {
+    function openLocation() {
       if (dialog.open) return;
       resetLocationWork();
       query.value = '';
@@ -271,7 +261,20 @@
       write(status, '');
       dialog.showModal();
       query.focus();
-    });
+    }
+
+    $('weather-place').addEventListener('click', openLocation);
+    function returnHome(event) {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      if (!home) { openLocation(); return; }
+      explored = null;
+      renderGlobe(true);
+    }
+    $('globe-home')?.addEventListener('click', returnHome, { capture: true });
+    $('globe')?.addEventListener('keydown', (event) => {
+      if (event.key === 'Home' && !event.altKey && !event.ctrlKey && !event.metaKey) returnHome(event);
+    }, { capture: true });
     $('location-close').addEventListener('click', closeLocation);
     dialog.addEventListener('close', () => { if (!dialog.open) resetLocationWork(); });
     query.addEventListener('input', () => {
@@ -280,38 +283,56 @@
       write(status, '');
     });
 
+    const geolocationPermission = { permissions: ['geolocation'] };
+    const isExtension = Boolean(globalThis.chrome?.runtime?.id);
+
+    function locateDevice(current, success, failure) {
+      try {
+        if (!navigator.geolocation) { failure(); return; }
+        navigator.geolocation.getCurrentPosition(({ coords }) => {
+          if (!current()) return;
+          if (!validCoordinates(coords.latitude, coords.longitude)) { failure(); return; }
+          success({ name: 'Current location', lat: Number(coords.latitude.toFixed(2)),
+            lon: Number(coords.longitude.toFixed(2)), zone: null, gps: true });
+        }, failure, { enableHighAccuracy: false, timeout: 10_000, maximumAge: 5 * minute });
+      } catch { failure(); }
+    }
+
+    async function locateIfAllowed() {
+      const version = locationVersion;
+      const current = () => version === locationVersion && !dialog.open;
+      let granted;
+      try {
+        granted = isExtension ? await globalThis.chrome.permissions?.contains(geolocationPermission) :
+          (await navigator.permissions?.query({ name: 'geolocation' }))?.state === 'granted';
+      } catch { return; }
+      if (granted && current()) locateDevice(current, (next) => selectHome(next), () => {});
+    }
+
     locate.addEventListener('click', async () => {
-      if (globalThis.chrome?.runtime?.id && chrome.permissions) {
-        try {
-          const granted = await chrome.permissions.request({ permissions: ['geolocation'] });
-          if (!dialog.open) return;
-          if (!granted) { write(status, 'Location permission denied. Search for a city.'); return; }
-        } catch { write(status, 'Location unavailable. Search for a city.'); return; }
-      }
       const version = resetLocationWork();
+      const current = () => version === locationVersion && dialog.open;
+      if (!current()) return;
       results.replaceChildren();
-      if (!navigator.geolocation) {
-        write(status, 'Location unavailable. Search for a city.');
-        return;
-      }
       locate.disabled = true;
       write(status, 'Finding your location…');
-      const current = () => version === locationVersion && dialog.open;
       const failure = (error) => {
         if (!current()) return;
         locate.disabled = false;
         write(status, error?.code === 1 ? 'Location permission denied. Search for a city.' :
           'Location unavailable. Search for a city.');
       };
-      try {
-        navigator.geolocation.getCurrentPosition(({ coords }) => {
+      if (isExtension) {
+        try {
+          const granted = await globalThis.chrome.permissions.request(geolocationPermission);
           if (!current()) return;
-          if (!validCoordinates(coords.latitude, coords.longitude)) { failure(); return; }
-          selectPlace({ name: 'Current location', lat: Number(coords.latitude.toFixed(2)),
-            lon: Number(coords.longitude.toFixed(2)), zone: null, gps: true });
-          closeLocation();
-        }, failure, { enableHighAccuracy: false, timeout: 10_000, maximumAge: 5 * minute });
-      } catch { failure(); }
+          if (!granted) { failure({ code: 1 }); return; }
+        } catch { failure(); return; }
+      }
+      locateDevice(current, (next) => {
+        selectHome(next, true);
+        closeLocation();
+      }, failure);
     });
 
     $('city-search').addEventListener('submit', async (event) => {
@@ -342,7 +363,10 @@
           const button = html('button', '', label);
           button.type = 'button';
           button.addEventListener('click', () => {
-            selectPlace({ name: item.name, label, lat: item.latitude, lon: item.longitude, zone: item.timezone });
+            if (!current()) return;
+            const manual = { name: item.name, label, lat: item.latitude, lon: item.longitude, zone: item.timezone };
+            saveManualHome(manual);
+            selectHome(manual, true);
             closeLocation();
           });
           const row = html('li');
@@ -403,11 +427,14 @@
     }
 
     function paintSun(now) {
-      if (place.zone) {
-        const civilDay = localDay(now, place.zone);
-        if (!sun || sun.civilDay !== civilDay) sun = sunForDay(civilDay, place);
+      const zone = home?.zone || deviceZone();
+      if (home) {
+        const civilDay = localDay(now, zone);
+        if (!sun || sun.civilDay !== civilDay || sun.zone !== zone) {
+          sun = { ...sunForDay(civilDay, { ...home, zone }), zone };
+        }
       }
-      const label = (instant) => instant == null ? '—' : time(instant, place.zone);
+      const label = (instant) => instant == null ? '—' : time(instant, zone);
       paintTime($('sunrise'), label(sun?.rise));
       paintTime($('sunset'), label(sun?.set));
       const ms = now.getTime();
@@ -474,9 +501,11 @@
       refreshWeather();
     }
 
-    renderPlace();
+    renderHome();
+    renderGlobe();
     tick();
     refreshWeather(true);
+    locateIfAllowed();
     setInterval(() => { if (!document.hidden) tick(); }, 1000);
     setInterval(() => refreshWeather(), minute);
     window.addEventListener('focus', wake);

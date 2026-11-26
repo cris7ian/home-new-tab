@@ -15,13 +15,14 @@
   const coords = p => [wrap(p.lon), p.lat];
   const valid = p => p && Number.isFinite(p.lon) && Number.isFinite(p.lat) && Math.abs(p.lat) <= 90;
   const motion = matchMedia('(prefers-reduced-motion: reduce)');
-  let usePlace = null, queued = null;
+  let usePlace = null, queued = null, recenter = null;
   window.AlmanacGlobe = {
     setPlace(place, cities) {
       if (!valid(place)) return;
       if (usePlace) usePlace(place, cities);
       else queued = [place, cities];
-    }
+    },
+    centerPlace() { recenter?.(); }
   };
 
   function init() {
@@ -38,6 +39,22 @@
     const path = d3.geoPath(projection, ctx);
     const nightCircle = d3.geoCircle().radius(90).precision(2);
     const grid = d3.geoGraticule().step([30, 30]).stepMajor([90, 90])();
+    const bayer = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5];
+    const textures = new Map();
+    function ink(color, threshold) {
+      const key = `${color}:${threshold}`;
+      if (textures.has(key)) return textures.get(key);
+      const tile = document.createElement('canvas');
+      tile.width = tile.height = 8;
+      const pixels = tile.getContext('2d');
+      pixels.fillStyle = color;
+      bayer.forEach((value, i) => {
+        if (value < threshold) pixels.fillRect((i % 4) * 2, Math.floor(i / 4) * 2, 1, 1);
+      });
+      const pattern = ctx.createPattern(tile, 'repeat');
+      textures.set(key, pattern);
+      return pattern;
+    }
 
     let width = 0, height = 0, ratioX = 1, ratioY = 1, radius = 1;
     let frame = null, rotation = null, drag = null, center = [0, 0];
@@ -185,6 +202,12 @@
       ctx.fill();
       ctx.clip();
       fill(data.land, c.land);
+      const grain = document.documentElement.dataset.design === 'grid';
+      if (grain) {
+        fill(data.land, ink('rgba(0,0,0,.40)', 13));
+        ctx.fillStyle = ink('rgba(0,0,0,.12)', 4);
+        ctx.fillRect(x - radius, y - radius, radius * 2, radius * 2);
+      }
       stroke(grid, c.grid, .55, .55);
       stroke(data.zoneWater, c.zones, .65, .65, [2.2, 2.35]);
       stroke(data.zoneLand, c.zones, .7, .77);
@@ -199,6 +222,7 @@
       ctx.fillStyle = shading;
       ctx.fillRect(x - radius, y - radius, radius * 2, radius * 2);
       fill(night, c.night);
+      if (grain) fill(night, ink('rgba(255,255,255,.48)', 8));
       stroke(terminator, c.water, .75, .47);
 
       const station = liveIss();
@@ -268,6 +292,7 @@
       stopFollowing();
       if (selected) rotateTo(coords(selected));
     }
+    recenter = returnHome;
 
     usePlace = (place, cities) => {
       const first = selected === null;
@@ -318,7 +343,7 @@
       const base = rotation?.target || center;
       rotateTo([wrap(base[0] + offset[0]), clamp(base[1] + offset[1], -90, 90)]);
     });
-    homeButton?.addEventListener('click', returnHome);
+    if (homeButton?.dataset.managed !== 'true') homeButton?.addEventListener('click', returnHome);
     issButton?.addEventListener('click', () => {
       const position = liveIss();
       if (!position) return;
@@ -392,7 +417,7 @@
     // Each design may change its monochrome palette by switching the root theme.
     const theme = new MutationObserver(schedule);
     for (const element of [document.documentElement, document.body, stage, canvas]) {
-      theme.observe(element, {attributes: true, attributeFilter: ['class', 'style', 'data-theme']});
+      theme.observe(element, {attributes: true, attributeFilter: ['class', 'style', 'data-theme', 'data-design']});
     }
     function visibility() {
       clearTimeout(pollTimer);

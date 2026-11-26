@@ -1,0 +1,131 @@
+#solar-system {
+  border: 1px solid var(--ink);
+  margin-block: 16px;
+  min-width: 0;
+}
+
+#solar-system .solar-heading {
+  border-bottom: 1px solid var(--rule);
+  padding-inline: 14px;
+}
+
+.solar-epoch,
+#solar-system-caption {
+  color: var(--quiet);
+  font: 400 10px/1.4 var(--mono);
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+
+.solar-epoch { text-align: right; }
+
+.solar-figure {
+  display: grid;
+  grid-template-columns: minmax(0, 2.25fr) minmax(248px, 1fr);
+  margin: 0;
+}
+
+.solar-plate {
+  display: grid;
+  place-items: center;
+  min-width: 0;
+  background-color: color-mix(in srgb, var(--paper) 97%, var(--ink));
+  background-image: radial-gradient(circle at 1px 1px, color-mix(in srgb, var(--ink) 15%, transparent) .55px, transparent .8px);
+  background-size: 5px 5px;
+}
+
+.solar-plot {
+  display: block;
+  width: min(100%, 410px);
+  height: auto;
+  aspect-ratio: 1;
+  background: radial-gradient(closest-side, var(--paper) 85%, transparent);
+  font-family: var(--mono);
+}
+
+.solar-register, .solar-guide, .solar-axis, .solar-tick, .solar-orbits {
+  fill: none;
+  stroke-width: .75;
+}
+.solar-register, .solar-tick { stroke: var(--quiet); }
+.solar-orbits { stroke: var(--rule); }
+.solar-guide, .solar-axis { stroke: var(--rule); stroke-dasharray: 1 3; }
+.solar-guide { stroke-dasharray: 1 4; }
+.solar-belt { fill: none; stroke: url(#solar-belt-dots); stroke-width: 7; opacity: .25; }
+.solar-bearings { fill: var(--quiet); font-size: 11px; }
+.solar-disk { fill: var(--ink); }
+.solar-grain { fill: var(--paper); opacity: .7; }
+.solar-flux { fill: none; stroke: currentColor; stroke-width: .75; stroke-dasharray: .7 2.8; }
+.solar-corona {
+  transform-origin: 50% 50%;
+  opacity: .82;
+  animation: solar-corona-breathe 9s ease-in-out infinite alternate;
+}
+
+@keyframes solar-corona-breathe {
+  from { opacity: .61; transform: scale(.95); }
+  to { opacity: .88; transform: scale(1.07); }
+}
+
+.solar-leader { stroke: var(--ink); stroke-width: .85; }
+.solar-point { fill: var(--ink); stroke: var(--paper); stroke-width: 1.4; }
+.solar-tag { fill: var(--paper); stroke: var(--ink); stroke-width: .85; }
+.solar-number { fill: var(--ink); font-size: 14px; text-anchor: middle; }
+
+.solar-ledger {
+  align-self: stretch;
+  border-collapse: collapse;
+  border-left: 1px solid var(--rule);
+  width: 100%;
+  text-align: left;
+}
+.solar-ledger th, .solar-ledger td {
+  border-bottom: 1px solid var(--faint);
+  padding: 4px 14px;
+  font-weight: 400;
+}
+.solar-ledger thead th {
+  height: 32px;
+  border-color: var(--rule);
+  color: var(--quiet);
+  font-size: 10px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+.solar-ledger tr > :last-child { text-align: right; }
+.solar-ledger tbody tr:last-child > * { border-bottom: 0; }
+.solar-key {
+  display: inline-grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  margin-inline-end: 9px;
+  border: 1px solid var(--rule);
+  vertical-align: middle;
+  font-size: 11px;
+  line-height: 1;
+}
+
+#solar-system-caption {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  border-top: 1px solid var(--rule);
+  padding: 8px 14px;
+}
+
+@media (max-width: 650px) {
+  .solar-figure { grid-template-columns: minmax(0, 1fr); }
+  .solar-ledger { border-left: 0; }
+  .solar-ledger thead { border-top: 1px solid var(--rule); }
+  .solar-ledger tbody th, .solar-ledger td { height: 29px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .solar-corona { animation: none; }
+}
+
+@media (forced-colors: active) {
+  .solar-plot { forced-color-adjust: none; --ink: CanvasText; --paper: Canvas; --quiet: CanvasText; --rule: GrayText; color: CanvasText; }
+}

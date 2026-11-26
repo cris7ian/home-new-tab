@@ -1,0 +1,64 @@
+<section id="solar-system" aria-labelledby="solar-system-title">
+  <div class="section-line solar-heading">
+    <h2 class="eyebrow" id="solar-system-title">Solar system</h2>
+    <span class="solar-epoch"><time data-solar-date hidden></time><span data-solar-status>Positions unavailable</span></span>
+  </div>
+  <figure class="solar-figure">
+    <div class="solar-plate">
+      <svg class="solar-plot" viewBox="0 0 344 344" role="img" aria-label="Top-down solar system; numbered markers match the planet table" aria-describedby="solar-system-caption">
+        <defs>
+          <pattern id="solar-belt-dots" width="4" height="4" patternUnits="userSpaceOnUse">
+            <path d="M0 0h1v1H0zM2 2h1v1H2z" fill="currentColor"/>
+          </pattern>
+          <pattern id="solar-corona-dots" width="4" height="4" patternUnits="userSpaceOnUse">
+            <path d="M0 0h1.4v1.4H0zM2 2h1v1H2zM0 3h.6v.6H0z" fill="currentColor"/>
+          </pattern>
+          <pattern id="solar-disk-dots" width="3" height="3" patternUnits="userSpaceOnUse">
+            <path d="M1 1h.8v.8H1z" class="solar-grain"/>
+          </pattern>
+        </defs>
+        <path class="solar-register" d="M27 15H15v12m302-12h12v12M15 317v12h12m302-12v12h-12"/>
+        <circle class="solar-guide" cx="172" cy="172" r="150"/>
+        <circle class="solar-belt" cx="172" cy="172" r="88.5"/>
+        <path class="solar-axis" d="M16 172h312M172 22v300"/>
+        <path class="solar-tick" d="M172 22v7m0 286v7M22 172h7m286 0h7M66 66l5 5m202 202 5 5M66 278l5-5m202-202 5-5"/>
+        <g class="solar-orbits">
+          <circle cx="172" cy="172" r="34" data-orbit="Mercury"/>
+          <circle cx="172" cy="172" r="49" data-orbit="Venus"/>
+          <circle cx="172" cy="172" r="64" data-orbit="Earth"/>
+          <circle cx="172" cy="172" r="79" data-orbit="Mars"/>
+          <circle cx="172" cy="172" r="98" data-orbit="Jupiter"/>
+          <circle cx="172" cy="172" r="113" data-orbit="Saturn"/>
+          <circle cx="172" cy="172" r="128" data-orbit="Uranus"/>
+          <circle cx="172" cy="172" r="143" data-orbit="Neptune"/>
+        </g>
+        <g class="solar-bearings" text-anchor="middle">
+          <text x="172" y="16">90°</text><text x="15" y="166">180°</text>
+          <text x="331" y="166">0°</text><text x="172" y="335">270°</text>
+        </g>
+        <g class="solar-corona">
+          <circle cx="172" cy="172" r="29" fill="url(#solar-corona-dots)" opacity=".36"/>
+          <circle cx="172" cy="172" r="22" fill="url(#solar-corona-dots)"/>
+          <circle class="solar-flux" cx="172" cy="172" r="25.5"/>
+        </g>
+        <circle class="solar-disk" cx="172" cy="172" r="13"/>
+        <circle cx="172" cy="172" r="12" fill="url(#solar-disk-dots)"/>
+        <g data-solar-marks></g>
+      </svg>
+    </div>
+    <table class="solar-ledger" aria-label="Heliocentric ecliptic longitudes">
+      <thead><tr><th scope="col">Planet</th><th scope="col">Longitude</th></tr></thead>
+      <tbody>
+        <tr data-planet="Mercury"><th scope="row"><span class="solar-key" aria-hidden="true">1</span>Mercury</th><td>—</td></tr>
+        <tr data-planet="Venus"><th scope="row"><span class="solar-key" aria-hidden="true">2</span>Venus</th><td>—</td></tr>
+        <tr data-planet="Earth"><th scope="row"><span class="solar-key" aria-hidden="true">3</span>Earth</th><td>—</td></tr>
+        <tr data-planet="Mars"><th scope="row"><span class="solar-key" aria-hidden="true">4</span>Mars</th><td>—</td></tr>
+        <tr data-planet="Jupiter"><th scope="row"><span class="solar-key" aria-hidden="true">5</span>Jupiter</th><td>—</td></tr>
+        <tr data-planet="Saturn"><th scope="row"><span class="solar-key" aria-hidden="true">6</span>Saturn</th><td>—</td></tr>
+        <tr data-planet="Uranus"><th scope="row"><span class="solar-key" aria-hidden="true">7</span>Uranus</th><td>—</td></tr>
+        <tr data-planet="Neptune"><th scope="row"><span class="solar-key" aria-hidden="true">8</span>Neptune</th><td>—</td></tr>
+      </tbody>
+    </table>
+    <figcaption id="solar-system-caption"><span>J2000 ecliptic</span><span>Not to scale</span></figcaption>
+  </figure>
+</section>
