@@ -22,26 +22,45 @@
     }
 
     function renderClocks() {
-      clocks = cities.map(createClock);
-      clockGrid.style.setProperty('--clock-count', clocks.length);
-      clockGrid.replaceChildren(...clocks.map(({ button }) => button));
-
-      clockList.replaceChildren(...cities.map((city, index) => {
+      clocks = cities.map((city, rosterIndex) => {
         const row = html('li');
         const name = city.label || city.name;
         const remove = html('button', '', 'Remove');
         remove.type = 'button';
         remove.setAttribute('aria-label', `Remove ${name}`);
         remove.addEventListener('click', () => editClocks(() => {
+          const index = clocks.findIndex((clock) => clock.row === row);
           const remaining = readClocks().filter((entry) => !sameCity(entry, city));
           saveClocks(remaining);
           const next = clockList.children[Math.min(index, remaining.length - 1)]?.lastElementChild;
           (next || addClockButton).focus();
         }));
         row.append(html('span', '', name), remove);
-        return row;
-      }));
+        return { ...createClock(city), row, rosterIndex };
+      });
+      clockGrid.style.setProperty('--clock-count', clocks.length);
       $('city-clocks-empty').hidden = cities.length > 0;
+      paintClocks(new Date(), true);
+    }
+
+    function paintClocks(now, rosterChanged = false) {
+      for (const clock of clocks) {
+        const cityTime = parts(now, clock.city.zone, { ...timeOptions, timeZoneName: 'shortOffset' });
+        // shortOffset in en-GB gives GMT, GMT+5:45, GMT-3:30, etc.
+        const zone = cityTime.timeZoneName;
+        const [hours, minutes = '0'] = zone.slice(4).split(':');
+        clock.offsetMinutes = (zone[3] === '-' ? -1 : 1) * (Number(hours) * 60 + Number(minutes));
+        paintTime(clock.clockTime, clockText(cityTime));
+        write(clock.offset, zone.replace(/^GMT/, 'UTC'));
+      }
+      const compare = (a, b) => a.offsetMinutes - b.offsetMinutes || a.rosterIndex - b.rosterIndex;
+      const outOfOrder = clocks.some((clock, index) => index > 0 && compare(clocks[index - 1], clock) > 0);
+      if (!rosterChanged && !outOfOrder) return;
+      if (outOfOrder) clocks.sort(compare);
+      const focused = document.activeElement;
+      clockGrid.replaceChildren(...clocks.map(({ button }) => button));
+      clockList.replaceChildren(...clocks.map(({ row }) => row));
+      if (clockGrid.contains(focused) || clockList.contains(focused)) focused.focus({ preventScroll: true });
     }
 
     function updateClocks(next) {

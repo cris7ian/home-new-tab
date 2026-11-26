@@ -221,9 +221,12 @@ def configurable_clocks(page, peer=None):
     page.get_by_role('button', name='Add Kathmandu, Nepal').click()
     expect(page.locator('#add-city-clock')).to_be_focused()
     expect(page.locator('#settings')).to_be_visible()
-    expect(clocks.locator('.clock-city')).to_have_count(9)
+    expect(clocks.locator('.clock-city')).to_have_text([
+        'Los Angeles', 'New York', 'Caracas', 'London', 'Madrid', 'Dubai', 'Kathmandu', 'Tokyo', 'Sydney',
+    ])
+    expect(page.locator('#city-clock-list li span').nth(6)).to_have_text('Kathmandu, Nepal')
     if peer:
-        expect(peer.locator('#clocks .clock-city').last).to_have_text('Kathmandu')
+        expect(peer.locator('#clocks .clock-city').nth(6)).to_have_text('Kathmandu')
     page.get_by_role('button', name='Close settings').click()
     expect(page.locator('#place-name')).to_have_text(home)
     assert page.evaluate('document.documentElement.scrollWidth === innerWidth')
@@ -245,6 +248,31 @@ def configurable_clocks(page, peer=None):
     expect(clocks).to_be_hidden()
     page.reload()
     expect(clocks.locator('.clock-city')).to_have_count(0)
+
+
+def city_clock_sort(browser):
+    page = browser.new_page()
+    page.clock.install(time=datetime.fromisoformat('2026-10-03T16:29:45+00:00'))
+    page.add_init_script("""localStorage.setItem('home-new-tab.city-clocks.v1', JSON.stringify([
+      {name: 'Brisbane', lat: -27.47, lon: 153.03, zone: 'Australia/Brisbane'},
+      {name: 'Adelaide', lat: -34.93, lon: 138.60, zone: 'Australia/Adelaide'},
+      {name: 'St. John’s', lat: 47.56, lon: -52.71, zone: 'America/St_Johns'},
+      {name: 'Caracas', lat: 10.48, lon: -66.88, zone: 'America/Caracas'},
+      {name: 'Accra', lat: 5.60, lon: -0.19, zone: 'Africa/Accra'}
+    ]));""")
+    page.route('https://api.open-meteo.com/v1/forecast?**', lambda route: route.fulfill(json={
+        'current': {'temperature_2m': 19, 'weather_code': 0, 'is_day': 0},
+    }))
+    page.goto(f'{BASE}globe.html')
+    clocks = page.locator('#clocks .clock-city')
+    expect(clocks).to_have_text(['Caracas', 'St. John’s', 'Accra', 'Adelaide', 'Brisbane'])
+    adelaide = page.locator('#clocks').get_by_role('button', name=re.compile('Adelaide'))
+    adelaide.click()
+    page.clock.fast_forward(30_000)
+    expect(clocks).to_have_text(['Caracas', 'St. John’s', 'Accra', 'Brisbane', 'Adelaide'])
+    expect(adelaide).to_be_focused()
+    expect(adelaide).to_have_attribute('aria-pressed', 'true')
+    page.close()
 
 
 def clock_proposals(browser, errors):
@@ -491,6 +519,7 @@ def main():
         page.goto(f'{BASE}globe.html')
         configurable_clocks(page)
         page.close()
+        city_clock_sort(browser)
         print('City clocks: Caracas time, add, duplicate prevention, weather, removal and persistence on mobile')
         browser.close()
         extension = str(HERE.parent / 'extension')

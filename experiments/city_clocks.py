@@ -44,6 +44,11 @@ def city_clocks(js, change):
             locationMode('manual');""")
     js = change(js, "          const button = html('button', '', label);",
         "          const button = html('button', '', addingClock ? `Add ${label}` : label);")
+    js = change(js, """      for (const { city, clockTime, offset } of clocks) {
+        const cityTime = parts(now, city.zone, { ...timeOptions, timeZoneName: 'shortOffset' });
+        paintTime(clockTime, clockText(cityTime));
+        write(offset, cityTime.timeZoneName.replace(/^GMT/, 'UTC'));
+      }""", '      paintClocks(now);')
     controls = Path(__file__).with_name('city_clocks.js').read_text(encoding='utf-8')
     return change(js, '    renderHome();\n    renderGlobe();\n    tick();', controls + """
     renderHome();
