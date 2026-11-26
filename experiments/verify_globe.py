@@ -362,6 +362,18 @@ def main():
                 page.wait_for_selector('#globe', timeout=15000)
                 assert page.evaluate('location.protocol') == 'chrome-extension:'
                 assert page.evaluate('Boolean(chrome.runtime.id)')
+                assert page.evaluate('chrome.permissions.contains({permissions:["geolocation"]})')
+                await_coords = {'latitude': 41.3874, 'longitude': 2.1686, 'accuracy': 30}
+                ctx.set_geolocation(await_coords)
+                page.reload()
+                expect(page.locator('#place-name')).to_have_text('Set location')
+                assert page.evaluate('localStorage.getItem("home-new-tab.location-mode.v1")') is None
+                page.locator('#weather-place').click()
+                page.locator('#locate').click()
+                expect(page.locator('#place-name')).to_have_text('Near Barcelona', timeout=17000)
+                page.reload()
+                expect(page.locator('#place-name')).to_have_text('Near Barcelona', timeout=17000)
+                print('Unpacked MV3: required Chrome geolocation works only after the user clicks Use my location')
                 manual_weather(page)
                 check(page, 'grid')
                 status(page)

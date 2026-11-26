@@ -324,7 +324,10 @@
     }
 
     async function locateIfAllowed() {
-      if (locationMode() === 'manual') return;
+      const mode = locationMode();
+      // Chrome grants the required extension permission at install. Do not
+      // read the device location until the user enables it inside Home.
+      if (mode === 'manual' || (isExtension && mode !== 'device')) return;
       const version = locationVersion;
       const current = () => version === locationVersion && !dialog.open;
       let granted;
@@ -348,13 +351,6 @@
         write(status, error?.code === 1 ? 'Location permission denied. Search for a city.' :
           'Location unavailable. Search for a city.');
       };
-      if (isExtension) {
-        try {
-          const granted = await globalThis.chrome.permissions.request(geolocationPermission);
-          if (!current()) return;
-          if (!granted) { failure({ code: 1 }); return; }
-        } catch { failure(); return; }
-      }
       locateDevice(current, (next) => {
         locationMode('device');
         selectHome(next, true);

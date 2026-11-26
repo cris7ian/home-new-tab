@@ -4,14 +4,14 @@
 
 ## Install in Chrome on macOS
 
-1. Open the [v0.0.4 release](https://github.com/cris7ian/home-new-tab/releases/tag/v0.0.4) while signed in to GitHub.
-2. Download **`home-new-tab-v0.0.4.zip`**. Extract it to a folder you plan to keep.
+1. Open the [v0.0.5 release](https://github.com/cris7ian/home-new-tab/releases/tag/v0.0.5) while signed in to GitHub.
+2. Download **`home-new-tab-v0.0.5.zip`**. Extract it to a folder you plan to keep.
 3. Open `chrome://extensions` in your regular Chrome profile.
 4. Enable **Developer mode** and select **Load unpacked**.
 5. Select the extracted **`extension`** folder. It contains `manifest.json`.
 6. Press **⌘T**. If Chrome asks whether to keep the change, select **Keep it**.
 
-Select a city clock to rotate the globe and view that city’s weather and sun. Select the target icon to return to your location, or select **ISS** to follow the station. In Weather, choose **Use my location** to let Chrome detect where you are, or pick a city manually. Chrome asks for location access only if you choose to use it. Incognito new tabs are not overridden.
+Select a city clock to rotate the globe and view that city’s weather and sun. Select the target icon to return to your location, or select **ISS** to follow the station. In Weather, choose **Use my location** to let Chrome detect where you are, or pick a city manually. Chrome may show a location permission warning at installation. Home does not request device coordinates until you choose **Use my location** in the dashboard. Incognito new tabs are not overridden.
 
 Open **Settings → Theme** to choose **System**, **Light**, or **Dark**. System follows your device appearance.
 

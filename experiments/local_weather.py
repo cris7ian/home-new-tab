@@ -131,7 +131,20 @@ def exploring_weather(js: str) -> str:
           const name = city ? `Near ${city}` : accuracy > 8_000 ? 'Approximate location' : 'Current location';
           success({ name, lat: Number(latitude.toFixed(2)), lon: Number(longitude.toFixed(2)), zone: null, gps: true });
         }, failure, { enableHighAccuracy: precise, timeout: 12_000, maximumAge: precise ? 0 : 2 * minute });''')
-    js = _replace(js, '    async function locateIfAllowed() {\n      const version', '    async function locateIfAllowed() {\n      if (locationMode() === \'manual\') return;\n      const version')
+    js = _replace(js, '    async function locateIfAllowed() {\n      const version', '''    async function locateIfAllowed() {
+      const mode = locationMode();
+      // Chrome grants the required extension permission at install. Do not
+      // read the device location until the user enables it inside Home.
+      if (mode === 'manual' || (isExtension && mode !== 'device')) return;
+      const version''')
+    js = _replace(js, '''      if (isExtension) {
+        try {
+          const granted = await globalThis.chrome.permissions.request(geolocationPermission);
+          if (!current()) return;
+          if (!granted) { failure({ code: 1 }); return; }
+        } catch { failure(); return; }
+      }
+      locateDevice(current, (next) => {''', '''      locateDevice(current, (next) => {''')
     js = _replace(js, '        selectHome(next, true);\n        closeLocation();\n      }, failure);', "        locationMode('device');\n        selectHome(next, true);\n        closeLocation();\n      }, failure, true);")
     return _replace(js, '            saveManualHome(manual);', "            locationMode('manual');\n            saveManualHome(manual);")
 
