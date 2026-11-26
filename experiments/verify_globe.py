@@ -333,29 +333,71 @@ def geo_sun_regression(browser, errors):
         geolocation={'latitude': 41.3874, 'longitude': 2.1686, 'accuracy': 30}, permissions=['geolocation'])
     page = context.new_page()
     collect_errors(page, errors)
-    page.clock.install(time=datetime.fromisoformat('2026-11-26T20:00:00+01:00'))
+    page.clock.install(time=datetime.fromisoformat('2026-11-26T16:00:00+01:00'))
     with page.expect_request(lambda request: 'latitude=41.39' in request.url and 'longitude=2.17' in request.url, timeout=16000):
         assert page.goto(f'{BASE}globe.html').ok
     expect(page.locator('#place-name')).to_have_text('Near Barcelona')
     sun = page.locator('#sun-marker')
+    countdown = page.locator('#night-progress')
+    sunrise = page.locator('#sunrise')
+    sunset = page.locator('#sunset')
+
+    def cursor_x():
+        return float(sun.get_attribute('transform').split()[0].removeprefix('translate('))
+
+    def minutes_left():
+        match = re.fullmatch(r'(?:(\d+)h )?(\d+)m to sunrise', countdown.inner_text())
+        assert match
+        return 60 * int(match[1] or 0) + int(match[2])
+
+    expect(sun).to_have_attribute('data-state', 'day')
+    expect(countdown).to_be_hidden()
+    assert sunrise.bounding_box()['x'] < sunset.bounding_box()['x']
+    page.clock.fast_forward(4 * 3_600_000)
     expect(sun).to_have_attribute('data-state', 'night')
     expect(sun).to_be_visible()
     expect(sun.locator('.sun-night-glyph')).to_be_visible()
     expect(sun.locator('.sun-halo')).to_be_hidden()
-    expect(sun).to_have_attribute('transform', 'translate(300.00 61.00)')
+    assert sunset.bounding_box()['x'] < sunrise.bounding_box()['x']
+    start_x = cursor_x()
+    start_minutes = minutes_left()
+    assert 20 < start_x < 160
     page.clock.fast_forward(3_600_000)
-    expect(sun).to_have_attribute('transform', 'translate(300.00 61.00)')
-    page.clock.fast_forward(9 * 3_600_000)
+    assert cursor_x() > start_x
+    assert abs(minutes_left() - (start_minutes - 60)) <= 1
+    page.clock.fast_forward((3 * 60 - 1) * 60_000)
+    before_midnight = cursor_x()
+    bounds = (sunset.inner_text(), sunrise.inner_text())
+    page.clock.fast_forward(2 * 60_000)
     expect(sun).to_have_attribute('data-state', 'night')
-    expect(sun).to_have_attribute('transform', 'translate(20.00 61.00)')
+    assert 0 < cursor_x() - before_midnight < 2
+    assert bounds == (sunset.inner_text(), sunrise.inner_text())
+    page.clock.fast_forward(6 * 3_600_000)
+    expect(sun).to_have_attribute('data-state', 'night')
+    assert 240 < cursor_x() < 300
     page.clock.fast_forward(6 * 3_600_000)
     expect(sun).to_have_attribute('data-state', 'day')
+    expect(countdown).to_be_hidden()
     expect(sun.locator('.sun-night-glyph')).to_be_hidden()
     expect(sun.locator('.sun-halo')).to_be_visible()
+    assert sunrise.bounding_box()['x'] < sunset.bounding_box()['x']
     assert float(sun.get_attribute('transform').split()[1].strip(')')) < 78
     first = sun.get_attribute('transform')
     page.clock.fast_forward(3_600_000)
     expect(sun).not_to_have_attribute('transform', first)
+    polar_search = re.compile(r'geocoding-api\.open-meteo\.com/v1/search\?name=Longyearbyen&')
+    page.route(polar_search, lambda route: route.fulfill(json={'results': [
+        {'name': 'Longyearbyen', 'country': 'Svalbard and Jan Mayen', 'latitude': 78.22,
+         'longitude': 15.65, 'timezone': 'Arctic/Longyearbyen'},
+    ]}))
+    page.locator('#weather-place').click()
+    page.locator('#city-query').fill('Longyearbyen')
+    page.locator('#city-search button[type=submit]').click()
+    page.get_by_role('button', name='Longyearbyen, Svalbard and Jan Mayen').click()
+    expect(countdown).to_have_text('No complete solar cycle nearby')
+    expect(sun).to_be_hidden()
+    expect(sunrise).to_have_text('—')
+    expect(sunset).to_have_text('—')
     manual_weather(page)
     page.reload()
     expect(page.locator('#place-name')).to_contain_text('Madrid')
@@ -427,7 +469,7 @@ def main():
         stable_clock(browser)
         print('Monospace clock: no date or time layout shift from 09:59 to 10:00')
         geo_sun_regression(browser, errors)
-        print('Location and sun: nearby offline city label, night endpoints, daytime movement and saved manual override')
+        print('Location and sun: nearby city label, overnight countdown and midnight continuity, daytime movement and polar night')
         page = browser.new_page(viewport={'width': 320, 'height': 720})
         collect_errors(page, errors)
         page.goto(f'{BASE}globe.html')

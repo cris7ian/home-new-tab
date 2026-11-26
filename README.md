@@ -4,8 +4,8 @@
 
 ## Install in Chrome on macOS
 
-1. Open the [v0.0.6 release](https://github.com/cris7ian/home-new-tab/releases/tag/v0.0.6) while signed in to GitHub.
-2. Download **`home-new-tab-v0.0.6.zip`**. Extract it to a folder you plan to keep.
+1. Open the [v0.0.7 release](https://github.com/cris7ian/home-new-tab/releases/tag/v0.0.7) while signed in to GitHub.
+2. Download **`home-new-tab-v0.0.7.zip`**. Extract it to a folder you plan to keep.
 3. Open `chrome://extensions` in your regular Chrome profile.
 4. Enable **Developer mode** and select **Load unpacked**.
 5. Select the extracted **`extension`** folder. It contains `manifest.json`.
@@ -17,7 +17,7 @@ Open **Settings → Theme** to choose **System**, **Light**, or **Dark**. System
 
 Open **Settings → City clocks** to add or remove cities from the bottom row. Your roster is saved in your browser.
 
-The Sun moves along the arc in daylight. At night, a crescent marks the sunset or sunrise end. A city selected manually stays selected until you choose **Use my location** again. Nearby city labels are resolved on-device and are approximate.
+The Sun moves along the arc from sunrise to sunset. At night, a crescent shows progress from sunset to sunrise, with a countdown to sunrise. It represents elapsed night time; the Moon panel shows the actual phase. A city selected manually stays selected until you choose **Use my location** again. Nearby city labels are resolved on-device and are approximate.
 
 Keep the extracted folder on your Mac. To update an unpacked installation, replace its files without changing the folder path. Click **Reload** at `chrome://extensions` and accept the new location permission if Chrome asks. If Chrome disabled the extension during the update, enable it again. For a store installation, Chrome manages updates.
 
@@ -50,13 +50,13 @@ The public [privacy policy](https://home.salsaparapizza.com/privacy.html) comes 
 
 ## Chrome Web Store
 
-The current release has two ZIPs. `home-new-tab-v0.0.6.zip` is for manual installation and contains an `extension/` folder. `home-new-tab-web-store-0.0.6.zip` is for the Developer Dashboard and has `manifest.json` at the ZIP root. Uploading the ZIP to the dashboard and submitting it for review are separate from publishing a GitHub release.
+The current release has two ZIPs. `home-new-tab-v0.0.7.zip` is for manual installation and contains an `extension/` folder. `home-new-tab-web-store-0.0.7.zip` is for the Developer Dashboard and has `manifest.json` at the ZIP root. Uploading the ZIP to the dashboard and submitting it for review are separate from publishing a GitHub release.
 
 From the repo root, prepare a Store package and listing screenshots from a committed release:
 
 ```sh
 uv run --with playwright --with pillow python experiments/store/prepare.py \
-  --ref v0.0.6 --out experiments/artifacts/store-v0.0.6 \
+  --ref v0.0.7 --out experiments/artifacts/store-v0.0.7 \
   --chromium /path/to/chromium
 ```
 

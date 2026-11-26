@@ -180,6 +180,8 @@ def globe_page(styles, scripts, appearance):
     marker_close = 'm17 17 2.8 2.8"/></g>'
     moon_glyph = '<path class="sun-night-glyph" d="M4-10A10.8 10.8 0 1 0 10 5 9.1 9.1 0 0 1 4-10Z" fill="#171717" stroke="none"/>'
     source = change(source, marker_close, marker_close[:-4] + moon_glyph + '</g>')
+    sun_times = re.search(r'          <div class="sun-times">[^\n]+', source)[0]
+    source = change(source, sun_times, sun_times + '\n          <p id="night-progress"></p>')
     clocks = '        <div id="clocks" class="clock-grid" aria-label="City clocks"></div>'
     source = change(source, clocks, '')
     source = change(source, '  </main>', clocks + '\n  </main>')

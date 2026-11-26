@@ -36,6 +36,11 @@ html[data-presentation=center] #weather-place{max-width:100%;justify-content:sta
 html[data-presentation=center] .solar-art{width:100%;margin:0 0 6px;max-height:75px}
 html[data-presentation=center] .sun .section-line{display:none}
 html[data-presentation=center] .sun-times time{font:600 clamp(18px,2.2vw,29px)/1 var(--display);letter-spacing:-.018em;white-space:nowrap}
+.sun:has(#sun-marker[data-state=night]) .sun-times{flex-direction:row-reverse}
+.sun:has(#sun-marker[data-state=night]) .sun-times>div:first-child{text-align:right}
+.sun:has(#sun-marker[data-state=night]) .sun-times>div:last-child{text-align:left}
+#night-progress{margin:2px 0 0;color:var(--quiet);font-size:10px;text-align:center}
+#night-progress:empty{display:none}
 html[data-presentation=center] .moon-row{padding:0;gap:0}
 html[data-presentation=center] .moon-phase{font-size:clamp(17px,1.65vw,23px);line-height:1.1;white-space:nowrap}
 html[data-presentation=center] .lunar-art{width:min(100%,158px);height:auto}

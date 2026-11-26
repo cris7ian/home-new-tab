@@ -483,8 +483,11 @@
         if (set !== null) windows.push([event(set, +1, -1), set]);
         if (rise !== null) windows.push([rise, event(rise, -1, 1)]);
       }
-      const nightWindows = [[event(begin, -1, -2), rise], [set, event(end, +1, 2)]];
-      return { civilDay, rise, set, windows, nightWindows, begin, end, observer };
+      // Start each night at a sunset and pair it with the next nearby sunrise.
+      const nightWindows = [event(begin, -1, -1), set]
+        .filter((sunset) => sunset !== null)
+        .map((sunset) => [sunset, event(sunset, +1, 1)]);
+      return { civilDay, rise, set, windows, nightWindows };
     }
 
     function paintSun(now) {
@@ -496,42 +499,34 @@
           sun = { ...sunForDay(civilDay, { ...view, zone }), zone };
         }
       }
+      const ms = now.getTime();
+      const contains = ([start, end]) => start !== null && end !== null && start <= ms && ms < end;
+      const daylight = sun?.windows.find(contains);
+      const night = daylight ? null : sun?.nightWindows.find(contains);
       const label = instant => instant == null ? '—' : time(instant, zone);
-      paintTime($('sunrise'), label(sun?.rise));
-      paintTime($('sunset'), label(sun?.set));
-      if (!sun) {
+      paintTime($('sunrise'), label(night ? night[1] : sun?.rise));
+      paintTime($('sunset'), label(night ? night[0] : sun?.set));
+
+      const interval = daylight || night;
+      const caption = $('night-progress');
+      if (!interval) {
         marker.setAttribute('visibility', 'hidden');
         marker.removeAttribute('data-state');
+        write(caption, sun ? 'No complete solar cycle nearby' : '');
         return;
       }
-      const ms = now.getTime();
-      const contains = ([a, b]) => a !== null && b !== null && b > a && a <= ms && ms <= b;
-      const day = sun.windows.find(contains);
-      const night = sun.nightWindows.find(contains);
-      if (day) {
-        const [a, b] = day;
-        const t = (ms - a) / (b - a);
-        showCursor(t, 'day', Math.max(17, 236 * t * (1 - t)));
-      } else if (night) {
-        // Mark the relevant end of the daylight arc; do not plot a fake
-        // above-horizon position for a Sun we cannot currently see.
-        showCursor(night[1] === sun.rise ? 0 : 1, 'night', 17);
-      } else {
-        // Polar days and nights can have no crossing for weeks.
-        const eq = Astronomy.Equator(Astronomy.Body.Sun, now, sun.observer, true, true);
-        const hor = Astronomy.Horizon(now, sun.observer, eq.ra, eq.dec, 'normal');
-        if (hor.altitude < 0) {
-          marker.setAttribute('visibility', 'hidden');
-          marker.removeAttribute('data-state');
-          return;
-        }
-        const t = 0.5 - Math.sin(hor.azimuth * Math.PI / 180) * 0.38;
-        showCursor(t, 'day', 17 + 35 * Math.min(1, hor.altitude / 60));
-      }
+      const [start, end] = interval;
+      const progress = (ms - start) / (end - start);
+      showCursor(progress, night ? 'night' : 'day');
+      const remaining = Math.ceil((end - ms) / minute);
+      const hours = Math.floor(remaining / 60);
+      const minutes = remaining % 60;
+      write(caption, night ? `${hours ? `${hours}h ` : ''}${minutes}m to sunrise` : '');
     }
 
-    function showCursor(t, state, height) {
+    function showCursor(t, state) {
       const x = 20 + 280 * t;
+      const height = Math.max(17, 236 * t * (1 - t));
       marker.setAttribute('transform', `translate(${x.toFixed(2)} ${(78 - height).toFixed(2)})`);
       marker.setAttribute('data-state', state);
       marker.removeAttribute('visibility');
