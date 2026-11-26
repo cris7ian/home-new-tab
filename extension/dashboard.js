@@ -8,17 +8,18 @@
     const legacyStorageKey = 'local-almanac.place.v1';
     const minute = 60_000;
     const day = 24 * 60 * minute;
-    const cities = [
+    const defaultCities = [
       { name: 'Los Angeles', lat: 34.05, lon: -118.24, zone: 'America/Los_Angeles' },
       { name: 'New York', lat: 40.71, lon: -74.01, zone: 'America/New_York' },
-      { name: 'São Paulo', lat: -23.55, lon: -46.63, zone: 'America/Sao_Paulo' },
+      { name: 'Caracas', lat: 10.48, lon: -66.88, zone: 'America/Caracas' },
       { name: 'London', lat: 51.51, lon: -0.13, zone: 'Europe/London' },
       { name: 'Madrid', lat: 40.42, lon: -3.70, zone: 'Europe/Madrid' },
       { name: 'Dubai', lat: 25.20, lon: 55.27, zone: 'Asia/Dubai' },
       { name: 'Tokyo', lat: 35.68, lon: 139.69, zone: 'Asia/Tokyo' },
       { name: 'Sydney', lat: -33.87, lon: 151.21, zone: 'Australia/Sydney' },
     ];
-    const madrid = cities.find((city) => city.name === 'Madrid');
+    let cities = defaultCities;
+    const madrid = defaultCities.find((city) => city.name === 'Madrid');
     const dialog = $('location-dialog');
     const query = $('city-query');
     const results = $('city-results');
@@ -52,6 +53,7 @@
       if (node.dataset.value === value) return;
       node.dataset.value = value;
       node.replaceChildren(document.createTextNode(clock), ...(period ? [document.createTextNode(' '), html('span', 'meridiem', period)] : []));
+      if (period) scanNumber(node);
     }
     const parts = (instant, zone, options) => Object.fromEntries(
       formatter(zone, options).formatToParts(instant).map(({ type, value }) => [type, value]),
@@ -108,7 +110,7 @@
       return element;
     }
 
-    const clocks = cities.map((city) => {
+    function createClock(city) {
       const button = html('button', 'clock');
       button.type = 'button';
       const clockTime = html('span', 'clock-time');
@@ -119,9 +121,11 @@
         renderGlobe(true);
         switchForecast();
       });
+      if (city.label) button.title = city.label;
       return { city, button, clockTime, offset };
-    });
-    $('clocks').replaceChildren(...clocks.map(({ button }) => button));
+    }
+
+    let clocks;
 
     function renderHome() {
       const view = displayedPlace();
@@ -133,8 +137,7 @@
 
     function renderGlobe(force = false) {
       const selected = explored || home;
-      const match = (location) => location && cities.find((city) => city.name === location.name &&
-        Math.abs(city.lat - location.lat) < 0.1 && Math.abs(city.lon - location.lon) < 0.1);
+      const match = (location) => location && cities.find((city) => sameCity(city, location));
       const selectedCity = match(selected);
       for (const { city, button } of clocks) {
         button.classList.toggle('active', city === selectedCity);
@@ -158,7 +161,7 @@
       sun = null;
       renderHome();
       paintSun(new Date());
-      write($('weather-temp'), '—');
+      paintTemperature('—');
       weatherIcon.replaceChildren();
       refreshWeather(true);
     }
@@ -212,10 +215,32 @@
       }
     }
 
+    function scanNumber(node) {
+      if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+      node.animate(
+        [{ clipPath: 'inset(-20% 85% -20% 0)' }, { clipPath: 'inset(-20% 0 -20% 0)' }],
+        { duration: 180, easing: 'steps(5)' },
+      );
+    }
+
+    function paintTemperature(value, loading = false) {
+      const node = $('weather-temp');
+      const changed = node.textContent !== value;
+      write(node, value);
+      node.hidden = loading;
+      $('weather-loading').hidden = !loading;
+      $('weather-unit').hidden = loading;
+      if (changed && value !== '—') scanNumber(node);
+    }
+
     async function refreshWeather(force = false) {
       if (!displayedPlace() || (!force && (weatherRequest || Date.now() < weatherDue || document.hidden))) return;
       const controller = new AbortController();
       const target = displayedPlace();
+      if ($('weather-temp').textContent === '—') {
+        paintTemperature('—', true);
+        write($('weather-condition'), 'Loading weather…');
+      }
       weatherRequest = controller;
       const url = new URL('https://api.open-meteo.com/v1/forecast');
       url.search = new URLSearchParams({
@@ -233,13 +258,13 @@
         const current = data.current;
         if (!current || !Number.isFinite(current.temperature_2m)) throw new Error('Missing current weather');
         const [description, kind] = conditions[current.weather_code] || ['Condition unavailable', null];
-        write($('weather-temp'), String(Math.round(current.temperature_2m)));
+        paintTemperature(String(Math.round(current.temperature_2m)));
         write($('weather-condition'), description);
         drawWeather(kind, current.is_day !== 0);
         weatherDue = Date.now() + 15 * minute;
       } catch {
         if (weatherRequest !== controller) return;
-        write($('weather-temp'), '—');
+        paintTemperature('—');
         write($('weather-condition'), 'Weather unavailable');
         drawWeather(null);
         weatherDue = Date.now() + minute;
@@ -261,9 +286,13 @@
       dialog.close();
     }
 
-    function openLocation() {
+    function openLocation(forClock = false) {
       if (dialog.open) return;
       resetLocationWork();
+      addingClock = forClock;
+      write($('location-title'), forClock ? 'Add city clock' : 'Location');
+      $('location-close').setAttribute('aria-label', forClock ? 'Close city clock search' : 'Close location selector');
+      locate.hidden = forClock;
       query.value = '';
       results.replaceChildren();
       write(status, '');
@@ -271,7 +300,7 @@
       query.focus();
     }
 
-    $('weather-place').addEventListener('click', openLocation);
+    $('weather-place').addEventListener('click', () => openLocation());
     function returnHome(event) {
       event.preventDefault();
       event.stopImmediatePropagation();
@@ -383,11 +412,18 @@
         for (const [index, item] of matches.entries()) {
           const label = baseLabels.some((value, i) => i !== index && value === baseLabels[index]) ?
             placeLabel([item.name, item.admin2, ...labels[index].slice(1)]) : baseLabels[index];
-          const button = html('button', '', label);
+          const button = html('button', '', addingClock ? `Add ${label}` : label);
           button.type = 'button';
-          button.addEventListener('click', () => {
+          button.addEventListener('click', async () => {
             if (!current()) return;
             const manual = { name: item.name, label, lat: item.latitude, lon: item.longitude, zone: item.timezone };
+            if (addingClock) {
+              const added = await editClocks(() => addClock(manual));
+              if (!current()) return;
+              if (added) closeLocation();
+              else write(status, `${label} is already in your city clocks.`);
+              return;
+            }
             locationMode('manual');
             saveManualHome(manual);
             selectHome(manual, true);
@@ -552,6 +588,90 @@
       tick();
       refreshWeather();
     }
+
+    const clockKey = 'home-new-tab.city-clocks.v1';
+    const clockGrid = $('clocks');
+    const clockList = $('city-clock-list');
+    const addClockButton = $('add-city-clock');
+    let addingClock = false;
+    let clockStorageAvailable = true;
+
+    function sameCity(first, second) {
+      return first.name === second.name &&
+        Math.abs(first.lat - second.lat) < 0.1 && Math.abs(first.lon - second.lon) < 0.1;
+    }
+
+    function readClocks() {
+      if (!clockStorageAvailable) return cities;
+      try {
+        const saved = JSON.parse(localStorage.getItem(clockKey));
+        if (Array.isArray(saved) && saved.every((city) => city &&
+            typeof city.name === 'string' && city.name.trim() &&
+            validCoordinates(city.lat, city.lon) && validZone(city.zone))) return saved;
+      } catch { /* Use the current roster if storage is unavailable. */ return cities; }
+      return defaultCities;
+    }
+
+    function renderClocks() {
+      clocks = cities.map(createClock);
+      clockGrid.style.setProperty('--clock-count', clocks.length);
+      clockGrid.replaceChildren(...clocks.map(({ button }) => button));
+
+      clockList.replaceChildren(...cities.map((city, index) => {
+        const row = html('li');
+        const name = city.label || city.name;
+        const remove = html('button', '', 'Remove');
+        remove.type = 'button';
+        remove.setAttribute('aria-label', `Remove ${name}`);
+        remove.addEventListener('click', () => editClocks(() => {
+          const remaining = readClocks().filter((entry) => !sameCity(entry, city));
+          saveClocks(remaining);
+          const next = clockList.children[Math.min(index, remaining.length - 1)]?.lastElementChild;
+          (next || addClockButton).focus();
+        }));
+        row.append(html('span', '', name), remove);
+        return row;
+      }));
+      $('city-clocks-empty').hidden = cities.length > 0;
+    }
+
+    function updateClocks(next) {
+      cities = next;
+      const removedExplored = explored && !cities.some((city) => sameCity(city, explored));
+      if (removedExplored) explored = null;
+      renderClocks();
+      renderGlobe(Boolean(removedExplored));
+      if (removedExplored) switchForecast();
+      tick();
+    }
+
+    function saveClocks(next) {
+      try {
+        localStorage.setItem(clockKey, JSON.stringify(next));
+      } catch { clockStorageAvailable = false; }
+      updateClocks(next);
+    }
+
+    function editClocks(edit) {
+      // Serialize edits across tabs where Web Locks are available.
+      return navigator.locks ? navigator.locks.request(clockKey, edit) : edit();
+    }
+
+    function addClock(city) {
+      const roster = readClocks();
+      if (roster.some((entry) => sameCity(entry, city))) return false;
+      saveClocks([...roster, city]);
+      return true;
+    }
+
+    addClockButton.addEventListener('click', () => openLocation(true));
+    window.addEventListener('storage', (event) => {
+      if (event.storageArea === localStorage && (event.key === clockKey || event.key === null)) {
+        updateClocks(readClocks());
+      }
+    });
+    cities = readClocks();
+    renderClocks();
 
     renderHome();
     renderGlobe();

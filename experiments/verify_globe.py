@@ -74,8 +74,8 @@ def check(page, design):
 
 
 def status(page):
-    expect(page.locator('#globe-iss')).to_be_enabled(timeout=17000)
-    expect(page.locator('#iss-status')).to_contain_text('live', timeout=17000)
+    expect(page.locator('#globe-iss')).to_have_attribute('aria-disabled', 'false', timeout=17000)
+    expect(page.locator('#iss-status')).to_be_empty()
 
 
 def leap_year(browser):
@@ -175,6 +175,62 @@ def city_rotation(page):
     expect(page.locator('#sunrise')).to_have_text(home_sunrise)
 
 
+def configurable_clocks(page, peer=None):
+    page.clock.set_fixed_time(datetime.fromisoformat('2026-11-26T12:00:00+00:00'))
+    page.route('https://api.open-meteo.com/v1/forecast?**', lambda route: route.fulfill(json={
+        'timezone': 'Asia/Kathmandu', 'current': {'temperature_2m': 19, 'weather_code': 0, 'is_day': 1},
+    }))
+    page.route('https://geocoding-api.open-meteo.com/v1/search?**', lambda route: route.fulfill(json={
+        'results': [
+            {'name': 'Kathmandu', 'country': 'Nepal', 'latitude': 27.7172,
+             'longitude': 85.324, 'timezone': 'Asia/Kathmandu'},
+            {'name': 'Caracas', 'country': 'Venezuela', 'latitude': 10.488,
+             'longitude': -66.879, 'timezone': 'America/Caracas'},
+        ],
+    }))
+    clocks = page.locator('#clocks')
+    expect(clocks.locator('.clock-city')).to_have_text([
+        'Los Angeles', 'New York', 'Caracas', 'London', 'Madrid', 'Dubai', 'Tokyo', 'Sydney',
+    ])
+    expect(clocks.get_by_role('button', name=re.compile('Caracas')).locator('.clock-time')).to_have_text(
+        re.compile(r'^0?8:00 AM$'))
+    home = page.locator('#place-name').inner_text()
+    page.locator('#settings-open').click()
+    page.get_by_role('button', name='Add city', exact=True).click()
+    expect(page.get_by_role('button', name='Use my location')).to_be_hidden()
+    page.locator('#city-query').fill('Kathmandu')
+    page.locator('#city-search button[type=submit]').click()
+    page.get_by_role('button', name='Add Caracas, Venezuela').click()
+    expect(page.locator('#location-status')).to_contain_text('already in your city clocks')
+    page.get_by_role('button', name='Add Kathmandu, Nepal').click()
+    expect(page.locator('#add-city-clock')).to_be_focused()
+    expect(page.locator('#settings')).to_be_visible()
+    expect(clocks.locator('.clock-city')).to_have_count(9)
+    if peer:
+        expect(peer.locator('#clocks .clock-city').last).to_have_text('Kathmandu')
+    page.get_by_role('button', name='Close settings').click()
+    expect(page.locator('#place-name')).to_have_text(home)
+    assert page.evaluate('document.documentElement.scrollWidth === innerWidth')
+    page.reload()
+    kathmandu = clocks.get_by_role('button', name=re.compile('Kathmandu'))
+    expect(kathmandu.locator('.clock-time')).to_have_text(re.compile(r'^0?5:45 PM$'))
+    with page.expect_request(lambda req: 'latitude=27.72' in req.url and 'longitude=85.32' in req.url):
+        kathmandu.click()
+    expect(page.locator('#place-name')).to_contain_text('Kathmandu')
+    expect(page.locator('#weather-temp')).to_have_text('19')
+    page.locator('#settings-open').click()
+    page.get_by_role('button', name='Remove Kathmandu, Nepal').click()
+    expect(page.locator('#place-name')).to_have_text(home)
+    remove_buttons = page.locator('#city-clock-list button')
+    for remaining in range(7, -1, -1):
+        remove_buttons.first.click()
+        expect(remove_buttons).to_have_count(remaining)
+    expect(page.locator('#city-clocks-empty')).to_be_visible()
+    expect(clocks).to_be_hidden()
+    page.reload()
+    expect(clocks.locator('.clock-city')).to_have_count(0)
+
+
 def clock_proposals(browser, errors):
     for name in ('shoulders', 'meridian', 'inline'):
         for width, height in ((1440, 900), (390, 844), (320, 720)):
@@ -230,6 +286,30 @@ def theme_behavior(page):
     picker.select_option('system')
     expect(root).to_have_attribute('data-theme', 'light')
     page.keyboard.press('Escape')
+
+
+def early_theme(browser):
+    for system, saved, expected in (
+        ('dark', 'system', 'dark'),
+        ('light', 'dark', 'dark'),
+        ('dark', 'light', 'light'),
+    ):
+        page = browser.new_page(color_scheme=system)
+        page.add_init_script(f"localStorage.setItem('home-new-tab.theme.v1', '{saved}');")
+        url = f'{BASE}globe.html'
+
+        def early_markup(route):
+            response = route.fetch()
+            head, body = response.text().split('</head>', 1)
+            route.fulfill(response=response, body=head + '</head>' + body.split('<script', 1)[0])
+
+        page.route(url, early_markup)
+        assert page.goto(url).ok
+        background = 'rgb(20, 20, 20)' if expected == 'dark' else 'rgb(250, 250, 250)'
+        assert page.locator('body').evaluate('el => getComputedStyle(el).backgroundColor') == background, (system, saved)
+        assert page.locator('html').evaluate('el => getComputedStyle(el).backgroundColor') == background, (system, saved)
+        expect(page.locator('html')).to_have_attribute('data-theme', expected)
+        page.close()
 
 
 def stable_clock(browser):
@@ -293,6 +373,7 @@ def main():
     errors = []
     with sync_playwright() as p:
         browser = p.chromium.launch(**browser_args)
+        early_theme(browser)
         for design in DESIGNS:
             desktop = browser.new_context(viewport={'width': 1440, 'height': 900}, timezone_id='Europe/Madrid')
             page = desktop.new_page()
@@ -347,6 +428,12 @@ def main():
         print('Monospace clock: no date or time layout shift from 09:59 to 10:00')
         geo_sun_regression(browser, errors)
         print('Location and sun: nearby offline city label, night endpoints, daytime movement and saved manual override')
+        page = browser.new_page(viewport={'width': 320, 'height': 720})
+        collect_errors(page, errors)
+        page.goto(f'{BASE}globe.html')
+        configurable_clocks(page)
+        page.close()
+        print('City clocks: Caracas time, add, duplicate prevention, weather, removal and persistence on mobile')
         browser.close()
         extension = str(HERE.parent / 'extension')
         with TemporaryDirectory(prefix='home-chrome-') as profile:
@@ -392,6 +479,8 @@ def main():
                 check(second, 'grid')
                 expect(second.locator('#place-name')).to_contain_text('Madrid')
                 print('Unpacked MV3: Chrome new-tab override, system and saved themes, globe redraw, and persistent weather location')
+                configurable_clocks(second, peer=page)
+                print('Unpacked MV3: configurable city clocks and synchronization across new tabs')
     assert not errors, errors
 
 

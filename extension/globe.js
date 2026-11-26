@@ -357,7 +357,7 @@
 
     function report() {
       const active = Boolean(liveIss());
-      const text = active ? (failed ? 'ISS · retrying' : 'ISS · live') : (failed ? 'ISS · unavailable' : 'ISS · connecting');
+      const text = failed ? (active ? 'ISS · retrying' : 'ISS · unavailable') : (active ? '' : 'ISS · connecting');
       if (status && status.textContent !== text) status.textContent = text;
       issButton?.setAttribute('aria-disabled', String(!active));
       if (!active) stopFollowing();

@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 import re
 
+from city_clocks import city_clocks
 from local_weather import exploring_weather, local_weather
 from sun_cursor import solar_cursor
 
@@ -60,10 +61,55 @@ def app():
     return local_weather(result)
 
 
+def number_effects(js):
+    clock_content = "      node.replaceChildren(document.createTextNode(clock), ...(period ? [document.createTextNode(' '), html('span', 'meridiem', period)] : []));"
+    js = change(js, clock_content, clock_content + '\n      if (period) scanNumber(node);')
+    js = change(js, '    async function refreshWeather(force = false) {', '''    function scanNumber(node) {
+      if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+      node.animate(
+        [{ clipPath: 'inset(-20% 85% -20% 0)' }, { clipPath: 'inset(-20% 0 -20% 0)' }],
+        { duration: 180, easing: 'steps(5)' },
+      );
+    }
+
+    function paintTemperature(value, loading = false) {
+      const node = $('weather-temp');
+      const changed = node.textContent !== value;
+      write(node, value);
+      node.hidden = loading;
+      $('weather-loading').hidden = !loading;
+      $('weather-unit').hidden = loading;
+      if (changed && value !== '—') scanNumber(node);
+    }
+
+    async function refreshWeather(force = false) {''')
+    js = change(js, '      const target = displayedPlace();', '''      const target = displayedPlace();
+      if ($('weather-temp').textContent === '—') {
+        paintTemperature('—', true);
+        write($('weather-condition'), 'Loading weather…');
+      }''')
+    js = change(js, "      write($('weather-temp'), '—');\n      weatherIcon.replaceChildren();",
+        "      paintTemperature('—');\n      weatherIcon.replaceChildren();")
+    js = change(js, "        write($('weather-temp'), '—');", "        paintTemperature('—');")
+    return change(js, "        write($('weather-temp'), String(Math.round(current.temperature_2m)));",
+        "        paintTemperature(String(Math.round(current.temperature_2m)));")
+
+
 GLOBE_MARKUP = '''<div id="globe-stage"><canvas id="globe" aria-label="Interactive Earth with time zones, day and night, and ISS position. Use arrow keys to rotate." tabindex="0"></canvas></div><div class="globe-controls"><div><button id="globe-home" type="button" aria-label="Center selected city" title="Center selected city"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true"><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2"/><path d="M12 1v4m0 14v4M1 12h4m14 0h4"/></svg></button><button id="globe-iss" type="button" aria-label="Center the International Space Station" title="Center the International Space Station">ISS</button></div><span id="iss-status"></span></div><svg hidden aria-hidden="true"><g id="map-pins"></g></svg>'''
 YEAR_MARKUP = '''<section class="year" id="year-progress" aria-labelledby="year-title"><div class="section-line"><h2 class="eyebrow" id="year-title">Year progress</h2><span class="year-number"></span></div><div class="year-content"><div class="year-readout"><span class="year-percent"></span><span class="year-count"></span></div><div class="year-days" aria-hidden="true"></div></div></section>'''
 SETTINGS_BUTTON = '''<button type="button" class="icon-button" id="settings-open" aria-label="Appearance and data sources" title="Appearance and data sources" aria-haspopup="dialog"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true"><path d="M5 6h14M5 12h14M5 18h14"/><path d="M9 4v4m6 2v4m-4 2v4" stroke-width="2"/></svg></button>'''
 SETTINGS = '''<dialog id="settings" aria-labelledby="settings-label"><div class="settings-title"><h2 id="settings-label">Settings</h2><button class="icon-button" type="button" id="settings-close" aria-label="Close settings">×</button></div><label for="appearance">Appearance</label><select id="appearance"><option value="atlas">Atlas</option><option value="orbital">Orbital</option><option value="grid">Grid</option></select><details><summary>Data sources</summary><p>Weather by <a href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer">Open-Meteo</a> (<a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener noreferrer">CC BY 4.0</a>). Temperatures are rounded. City search uses <a href="https://www.geonames.org/" target="_blank" rel="noopener noreferrer">GeoNames</a> via Open-Meteo.</p><p>ISS positions by <a href="https://wheretheiss.at/" target="_blank" rel="noopener noreferrer">Where the ISS at?</a>. Boundaries by Natural Earth.</p></details></dialog>'''
+CITY_CLOCK_SETTINGS = '''<section class="city-clock-settings" aria-labelledby="city-clocks-title">
+  <h3 id="city-clocks-title">City clocks</h3>
+  <p id="city-clocks-empty" hidden>No city clocks.</p>
+  <ul id="city-clock-list"></ul>
+  <button type="button" id="add-city-clock" aria-haspopup="dialog">Add city</button>
+</section>'''
+FIRST_PAINT = '''<style>
+:root{color-scheme:light dark;--theme-paper:light-dark(#fafafa,#141414);--theme-ink:light-dark(#131313,#f3f3f3);background:var(--theme-paper)}
+:root[data-theme=light]{color-scheme:light}
+:root[data-theme=dark]{color-scheme:dark}
+</style>'''
 
 
 def page(design, styles, scripts, fixed=False):
@@ -119,10 +165,16 @@ def type_proposal(style, assets, footer):
     return source + footer
 
 
-def globe_page(styles, scripts):
+def globe_page(styles, scripts, appearance):
     source = page('grid', styles, scripts, fixed=True)
     source = change(source, 'data-fixed-design="true"', 'data-fixed-design="true" data-presentation="center"')
+    source = change(source, '<meta name="color-scheme" content="light">',
+        '<meta name="color-scheme" content="light dark">\n' + appearance + '\n' + FIRST_PAINT)
     source = change(source, YEAR_MARKUP, '')
+    source = change(source, '<span class="degrees" aria-label="degrees Celsius">',
+        '<span id="weather-loading" hidden aria-hidden="true"><span></span><span></span><span></span></span>'
+        '<span class="degrees" id="weather-unit" aria-label="degrees Celsius">')
+    source = change(source, '<span id="weather-condition">', '<span id="weather-condition" role="status">')
 
     source = re.sub(r'            <g class="sun-noon"[^\n]*</g>\n', '', source, count=1)
     marker_close = 'm17 17 2.8 2.8"/></g>'
@@ -151,13 +203,14 @@ def globe_page(styles, scripts):
     source = change(source, 'Boundaries by Natural Earth.</p>', 'Boundaries by Natural Earth.</p><p>Moon mosaic by <a href="https://svs.gsfc.nasa.gov/5001/" target="_blank" rel="noopener noreferrer">NASA’s Scientific Visualization Studio</a>. Nearby place labels use a reduced <a href="https://www.geonames.org/" target="_blank" rel="noopener noreferrer">GeoNames</a> gazetteer (<a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener noreferrer">CC BY 4.0</a>).</p>')
     source = change(source, 'aria-label="Data sources" title="Data sources"', 'aria-label="Settings" title="Settings"')
     source = change(source, '<details><summary>Data sources</summary>', '<label for="theme">Theme</label><select id="theme"><option value="system">System</option><option value="light">Light</option><option value="dark">Dark</option></select><details><summary>Data sources</summary>')
+    source = change(source, '<details><summary>Data sources</summary>', CITY_CLOCK_SETTINGS + '<details><summary>Data sources</summary>')
     return source
 
 
-def clock_page(styles, scripts, layout):
+def clock_page(styles, scripts, layout, *, appearance):
     if layout not in ('shoulders', 'meridian', 'inline'):
         raise ValueError(f'Unknown date and time layout: {layout}')
-    source = globe_page(styles, scripts)
+    source = globe_page(styles, scripts, appearance)
     source = change(source, 'data-presentation="center"', f'data-presentation="center" data-clock-layout="{layout}"')
     zone = '<span class="eyebrow zone" id="local-zone"></span>'
     clock = '<div id="local-time" class="local-time"></div>'
@@ -178,7 +231,7 @@ def main():
     standalone_app = app()
     city_data = b64encode((HERE / 'cities5000.json.gz').read_bytes()).decode('ascii')
     assets['nearby.js'] = change(read(HERE / 'nearby.js'), '/* @CITY_GZIP@ */', city_data)
-    assets['dashboard.js'] = solar_cursor(exploring_weather(standalone_app))
+    assets['dashboard.js'] = number_effects(city_clocks(solar_cursor(exploring_weather(standalone_app)), change))
     for previous in ('solar.js', 'year.js'):
         (EXT / previous).unlink(missing_ok=True)
     style = css()
@@ -192,12 +245,16 @@ def main():
     centered_style = '\n'.join((style, read(HERE / 'center.css'), read(HERE / 'clock-layouts.css'), read(HERE / 'theme.css')))
     (EXT / 'home.css').write_text(centered_style, encoding='utf-8')
     (EXT / 'manifest.json').write_text(read(HERE / 'manifest.json'), encoding='utf-8')
-    (EXT / 'newtab.html').write_text(clock_page('<link rel="stylesheet" href="home.css">', '\n'.join(f'<script defer src="{name}"></script>' for name in assets), 'meridian'), encoding='utf-8')
-    inline = '\n'.join(f'<script>\n{value}\n</script>' for value in assets.values())
+    dashboard_assets = {name: value for name, value in assets.items() if name != 'appearance.js'}
+    deferred = '\n'.join(f'<script defer src="{name}"></script>' for name in dashboard_assets)
+    (EXT / 'newtab.html').write_text(clock_page('<link rel="stylesheet" href="home.css">', deferred, 'meridian',
+        appearance='<script blocking="render" src="appearance.js"></script>'), encoding='utf-8')
+    inline = '\n'.join(f'<script>\n{value}\n</script>' for value in dashboard_assets.values())
+    appearance = f'<script>\n{assets["appearance.js"]}\n</script>'
     footer = '\n<!--\n' + notices.replace('--', '—') + '\n-->\n'
     for layout in ('shoulders', 'meridian', 'inline'):
-        (PREVIEW / f'globe-{layout}.html').write_text(clock_page(f'<style>{centered_style}</style>', inline, layout) + footer, encoding='utf-8')
-    (PREVIEW / 'globe.html').write_text(clock_page(f'<style>{centered_style}</style>', inline, 'meridian') + footer, encoding='utf-8')
+        (PREVIEW / f'globe-{layout}.html').write_text(clock_page(f'<style>{centered_style}</style>', inline, layout, appearance=appearance) + footer, encoding='utf-8')
+    (PREVIEW / 'globe.html').write_text(clock_page(f'<style>{centered_style}</style>', inline, 'meridian', appearance=appearance) + footer, encoding='utf-8')
     del assets['nearby.js']
     assets['dashboard.js'] = standalone_app
     assets['year.js'] = read(HERE / 'year.js')

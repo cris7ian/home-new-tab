@@ -1,6 +1,5 @@
 /* The resolved theme is assigned before the globe starts drawing. */
-html[data-presentation=center][data-theme=dark]{color-scheme:dark;--paper:#141414;--ink:#f3f3f3;--quiet:#b7b7b7;--rule:#545454;--faint:#353535;--hover:#303030;--globe-water:#484848;--globe-land:#828282;--globe-coast:#b1b1b1;--globe-grid:#858585;--globe-zones:#bebebe;--globe-night:rgba(7,7,7,.73);--globe-edge:#929292;--globe-pin:#fff;--globe-iss:#fff}
-html[data-presentation=center][data-theme=light]{color-scheme:light}
+html[data-presentation=center][data-theme=dark]{--quiet:#b7b7b7;--rule:#545454;--faint:#353535;--hover:#303030;--globe-water:#484848;--globe-land:#828282;--globe-coast:#b1b1b1;--globe-grid:#858585;--globe-zones:#bebebe;--globe-night:rgba(7,7,7,.73);--globe-edge:#929292;--globe-pin:#fff;--globe-iss:#fff}
 html[data-theme=dark][data-presentation=center] #clocks button:hover,html[data-theme=dark][data-presentation=center] #clocks button:focus-visible{background:var(--hover)}
 html[data-theme=dark] #city-results button:hover{background:var(--hover)}
 html[data-theme=dark] .solar-art{filter:invert(.88)}
@@ -8,6 +7,8 @@ html[data-theme=dark] .solar-art #sun-marker circle:nth-of-type(2),html[data-the
 html[data-theme=dark] :is(.locate,.search-row button){background:#ededed;color:#141414;border-color:#ededed}
 html[data-theme=dark] :is(.locate,.search-row button):hover{background:#ccc}
 #theme{width:100%;min-height:44px;padding:0 8px;background:var(--paper);color:var(--ink);border:1px solid var(--rule);border-radius:0;font:inherit}
+.search-row input:focus{outline:none;border-bottom-color:var(--quiet);box-shadow:inset 0 -1px 0 var(--quiet)}
+@media(forced-colors:active){.search-row input:focus{outline:1px solid Highlight;outline-offset:0}}
 #sun-marker .sun-night-glyph{display:none}
 #sun-marker[data-state=night] > :not(.sun-night-glyph){display:none}
 #sun-marker[data-state=night] .sun-night-glyph{display:block}

@@ -36,7 +36,9 @@ def prepare(package, ref):
     source = source.replace(anchor, policy + anchor.replace('id="locate"', 'id="locate" aria-describedby="geo-disclosure"'))
     page_path.write_text(source)
     css = package / 'home.css'
-    css.write_text(css.read_text() + '\n.geo-disclosure{font-size:12px;line-height:1.5;color:var(--quiet);margin:0 0 12px}\n')
+    css.write_text(css.read_text() +
+                   '\n.geo-disclosure{font-size:12px;line-height:1.5;color:var(--quiet);margin:0 0 12px}\n'
+                   '#geo-disclosure:has(+ #locate[hidden]){display:none}\n')
     return manifest
 
 
@@ -87,8 +89,13 @@ def main():
             page.locator('#city-search button[type=submit]').click()
             page.locator('#city-results button').filter(has_text=re.compile('Madrid.*Spain')).first.click(timeout=15000)
             expect(page.locator('#weather-temp')).to_have_text(re.compile(r'^-?\d+$'), timeout=15000)
-            expect(page.locator('#iss-status')).to_contain_text('live', timeout=15000)
+            expect(page.locator('#globe-iss')).to_have_attribute('aria-disabled', 'false', timeout=15000)
             expect(page.locator('#sunrise')).to_have_text(re.compile(r'^\d{2}:\d{2} (AM|PM)$'))
+            page.locator('#settings-open').click()
+            page.locator('#add-city-clock').click()
+            expect(page.locator('#geo-disclosure')).to_be_hidden()
+            page.keyboard.press('Escape')
+            page.keyboard.press('Escape')
             page.evaluate('document.fonts.ready')
             for scheme in ('light', 'dark'):
                 page.emulate_media(color_scheme=scheme)
