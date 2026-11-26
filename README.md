@@ -17,7 +17,7 @@ Open **Settings → Theme** to choose **System**, **Light**, or **Dark**. System
 
 The Sun moves along the arc in daylight. At night, a crescent marks the sunset or sunrise end. A city selected manually stays selected until you choose **Use my location** again. Nearby city labels are resolved on-device and are approximate.
 
-The folder must stay on your Mac. To update, replace its files with the newer version and click **Reload** at `chrome://extensions`.
+Keep the extracted folder on your Mac. To update an unpacked installation, replace its files without changing the folder path. Click **Reload** at `chrome://extensions` and accept the new location permission if Chrome asks. If Chrome disabled the extension during the update, enable it again. For a store installation, Chrome manages updates.
 
 ## Build the extension and previews
 
@@ -36,7 +36,7 @@ python3 -m http.server 4174 --bind 127.0.0.1 --directory experiments/preview-loc
 
 Open `http://localhost:4174/globe.html`. To preview on a trusted local network, bind the server to its LAN address instead. Browser permissions disable automatic location on plain HTTP except for loopback; use city search in that case. The page rounds your coordinates before sending them to the weather provider. Your last location choice stays in your browser.
 
-This project has no server-side application or runtime build dependencies. It does not change browser new-tab settings.
+The website does not change Chrome settings. The installed extension replaces Chrome’s normal new tab and works without the website. The solar-system code in `experiments/solar/` is a retired experiment, not part of the current build.
 
 ## Production
 
@@ -44,11 +44,26 @@ This project has no server-side application or runtime build dependencies. It do
 
 **`public/` is live.** Verify `experiments/preview-local/globe.html` before atomically replacing the live `public/index.html`. Do not run the legacy `build.py` against the production checkout.
 
+The public [privacy policy](https://home.salsaparapizza.com/privacy.html) comes from `experiments/store/privacy.html`. Verify that URL after publishing a policy change.
+
+## Chrome Web Store
+
+The current release has two ZIPs. `home-new-tab-v0.0.5.zip` is for manual installation and contains an `extension/` folder. `home-new-tab-web-store-0.0.5.zip` is for the Developer Dashboard and has `manifest.json` at the ZIP root. Uploading the ZIP to the dashboard and submitting it for review are separate from publishing a GitHub release.
+
+From the repo root, prepare a Store package and listing screenshots from a committed release:
+
+```sh
+uv run --with playwright --with pillow python experiments/store/prepare.py \
+  --ref v0.0.5 --out experiments/artifacts/store-v0.0.5 \
+  --chromium /path/to/chromium
+```
+
 ## Sources
 
 - [Natural Earth](https://www.naturalearthdata.com/downloads/10m-cultural-vectors/timezones/) (public domain). Boundaries are a simplified reference layer; city clocks use the browser's timezone rules.
 - [Open-Meteo](https://open-meteo.com/) for weather and place search.
+- [Where the ISS at?](https://wheretheiss.at/) for live ISS positions.
 - [GeoNames cities5000](https://download.geonames.org/export/dump/) ([CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)) for on-device nearby place labels. The bundled extract retains names and simplified coordinates.
 - [Astronomy Engine](https://github.com/cosinekitty/astronomy) 2.1.19 (MIT) for solar events and lunar phases.
 - [NASA’s Scientific Visualization Studio](https://svs.gsfc.nasa.gov/5001/) for the Lunar Reconnaissance Orbiter Moon mosaic. Resized and contrast-adjusted for the phase illustration.
-- [Bodoni Moda](https://fonts.google.com/specimen/Bodoni+Moda) and [DM Mono](https://fonts.google.com/specimen/DM+Mono), under the SIL Open Font License.
+- [Barlow Condensed](https://fonts.google.com/specimen/Barlow+Condensed) and [IBM Plex Mono](https://fonts.google.com/specimen/IBM+Plex+Mono), under the SIL Open Font License.
