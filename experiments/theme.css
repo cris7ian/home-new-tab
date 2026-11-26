@@ -1,0 +1,10 @@
+/* The resolved theme is assigned before the globe starts drawing. */
+html[data-presentation=center][data-theme=dark]{color-scheme:dark;--paper:#141414;--ink:#f3f3f3;--quiet:#b7b7b7;--rule:#545454;--faint:#353535;--hover:#303030;--globe-water:#484848;--globe-land:#828282;--globe-coast:#b1b1b1;--globe-grid:#858585;--globe-zones:#bebebe;--globe-night:rgba(7,7,7,.73);--globe-edge:#929292;--globe-pin:#fff;--globe-iss:#fff}
+html[data-presentation=center][data-theme=light]{color-scheme:light}
+html[data-theme=dark][data-presentation=center] #clocks button:hover,html[data-theme=dark][data-presentation=center] #clocks button:focus-visible{background:var(--hover)}
+html[data-theme=dark] #city-results button:hover{background:var(--hover)}
+html[data-theme=dark] .solar-art{filter:invert(.88)}
+html[data-theme=dark] .solar-art #sun-marker circle:nth-of-type(2),html[data-theme=dark] .solar-art .sun-noon circle:not(.sun-halo),html[data-theme=dark] .solar-art>circle{fill:#ededed}
+html[data-theme=dark] :is(.locate,.search-row button){background:#ededed;color:#141414;border-color:#ededed}
+html[data-theme=dark] :is(.locate,.search-row button):hover{background:#ccc}
+#theme{width:100%;min-height:44px;padding:0 8px;background:var(--paper);color:var(--ink);border:1px solid var(--rule);border-radius:0;font:inherit}

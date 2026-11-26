@@ -42,7 +42,7 @@
       return formatterCache.get(key);
     }
 
-    const timeOptions = { hour: 'numeric', minute: '2-digit', hourCycle: 'h12' };
+    const timeOptions = { hour: '2-digit', minute: '2-digit', hourCycle: 'h12' };
     const dateOptions = { year: 'numeric', month: '2-digit', day: '2-digit' };
     const deviceZone = () => Intl.DateTimeFormat().resolvedOptions().timeZone;
     const time = (instant, zone) => clockText(parts(instant, zone, timeOptions));
@@ -87,6 +87,7 @@
 
     let home = readManualHome();
     let explored = null;
+    const displayedPlace = () => explored || home;
     const defaultView = cities.find((city) => Intl.DateTimeFormat('en', { timeZone: city.zone })
       .resolvedOptions().timeZone === deviceZone()) || madrid;
 
@@ -116,13 +117,15 @@
       button.addEventListener('click', () => {
         explored = city;
         renderGlobe(true);
+        switchForecast();
       });
       return { city, button, clockTime, offset };
     });
     $('clocks').replaceChildren(...clocks.map(({ button }) => button));
 
     function renderHome() {
-      const label = home?.label || home?.name;
+      const view = displayedPlace();
+      const label = view?.label || view?.name;
       write($('place-name'), label || 'Set location');
       $('weather-place').setAttribute('aria-label', label ? `Change weather location: ${label}` : 'Set weather location');
       write($('weather-condition'), label ? '' : 'Location not set');
@@ -143,12 +146,17 @@
     }
 
     function selectHome(next, explicit = false) {
-      weatherRequest?.abort();
       home = next;
       if (explicit) explored = null;
+      renderGlobe(explicit);
+      if (!explored) switchForecast();
+    }
+
+    function switchForecast() {
+      weatherRequest?.abort();
+      weatherRequest = null;
       sun = null;
       renderHome();
-      renderGlobe(explicit);
       paintSun(new Date());
       write($('weather-temp'), '—');
       weatherIcon.replaceChildren();
@@ -205,9 +213,9 @@
     }
 
     async function refreshWeather(force = false) {
-      if (!home || (!force && (weatherRequest || Date.now() < weatherDue || document.hidden))) return;
+      if (!displayedPlace() || (!force && (weatherRequest || Date.now() < weatherDue || document.hidden))) return;
       const controller = new AbortController();
-      const target = home;
+      const target = displayedPlace();
       weatherRequest = controller;
       const url = new URL('https://api.open-meteo.com/v1/forecast');
       url.search = new URLSearchParams({
@@ -267,9 +275,15 @@
     function returnHome(event) {
       event.preventDefault();
       event.stopImmediatePropagation();
-      if (!home) { openLocation(); return; }
+      if (!home) {
+        if (explored) { explored = null; renderGlobe(true); switchForecast(); }
+        openLocation();
+        return;
+      }
+      const returning = explored !== null;
       explored = null;
       renderGlobe(true);
+      if (returning) switchForecast();
     }
     $('globe-home')?.addEventListener('click', returnHome, { capture: true });
     $('globe')?.addEventListener('keydown', (event) => {
@@ -427,11 +441,12 @@
     }
 
     function paintSun(now) {
-      const zone = home?.zone || deviceZone();
-      if (home) {
+      const view = displayedPlace();
+      const zone = view?.zone || deviceZone();
+      if (view) {
         const civilDay = localDay(now, zone);
         if (!sun || sun.civilDay !== civilDay || sun.zone !== zone) {
-          sun = { ...sunForDay(civilDay, { ...home, zone }), zone };
+          sun = { ...sunForDay(civilDay, { ...view, zone }), zone };
         }
       }
       const label = (instant) => instant == null ? '—' : time(instant, zone);

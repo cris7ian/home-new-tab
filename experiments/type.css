@@ -1,0 +1,39 @@
+/* Local proposal. Typography and pictograms, with no panel borders. */
+html[data-presentation=type]{--paper:#fafafa;--quiet:#565656}
+html[data-presentation=type] .sheet{width:min(1260px,calc(100% - 104px));padding-top:24px}
+html[data-presentation=type] :is(.masthead,.observatory,.atlas,.sky,.local-panels,.local-panels>section,.section-line,.moon){border:0}
+html[data-presentation=type] :is(.atlas,.sky>.year,.sky>.moon,.local-panels>section){padding:0}
+html[data-presentation=type] .masthead{min-height:38px}
+html[data-presentation=type] .date-line{padding:14px 0 clamp(26px,5vw,65px)}
+html[data-presentation=type] .date-line h1{font-size:clamp(58px,10vw,138px)}
+html[data-presentation=type] .observatory{grid-template-columns:minmax(235px,1fr) minmax(0,1.7fr);gap:clamp(26px,5.5vw,83px)}
+html[data-presentation=type] :is(.section-line,.sky>.moon .section-line){min-height:29px;padding:0;margin-bottom:14px;border:0}
+html[data-presentation=type] :is(.figure-index,.separator,.year-number){display:none}
+html[data-presentation=type] .clock-grid{grid-template-columns:repeat(2,minmax(0,1fr));border:0;gap:20px 18px}
+html[data-presentation=type] .clock{display:grid;gap:4px}
+html[data-presentation=type] .clock-city{font-size:10px;line-height:1.2}
+html[data-presentation=type] .clock-time{font:600 clamp(24px,3.2vw,42px)/.95 var(--display);letter-spacing:-.025em}
+html[data-presentation=type] .clock-offset{display:none}
+html[data-presentation=type] .sky{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr);grid-template-rows:auto auto;align-items:start;gap:21px 32px}
+html[data-presentation=type] .local-panels{grid-area:1/1;display:grid;grid-template-columns:minmax(0,1fr);gap:26px}
+html[data-presentation=type] .moon{grid-area:1/2}
+html[data-presentation=type] .year{grid-area:2/1/-1/-1}
+html[data-presentation=type] .year .section-line{margin-bottom:0}
+html[data-presentation=type] .year-content{padding:0}
+html[data-presentation=type] .year-readout{justify-content:flex-start;gap:14px;margin:0}
+html[data-presentation=type] .year-percent{font-size:44px}
+html[data-presentation=type] :is(.weather-row,.weather-meta,.sun-times,.moon-row){margin:0}
+html[data-presentation=type] .weather-row{justify-content:flex-start;gap:22px;min-height:73px}
+html[data-presentation=type] .temperature{font-size:clamp(60px,7.5vw,102px)}
+html[data-presentation=type] #weather-icon{height:76px;width:76px}
+html[data-presentation=type] .weather-meta{justify-content:flex-start;flex-wrap:wrap;gap:4px 16px}
+html[data-presentation=type] #weather-place{max-width:100%;text-align:left;padding-left:0;justify-content:start}
+html[data-presentation=type] .sun-times{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+html[data-presentation=type] .sun-times>div{justify-items:start;text-align:left;gap:6px}
+html[data-presentation=type] .sun-times time{font:600 clamp(23px,2.8vw,34px)/1 var(--display);letter-spacing:-.025em}
+.sun-pictogram{width:34px;height:34px}
+html[data-presentation=type] .moon-row{align-items:flex-start;text-align:left;padding:0;gap:0}
+html[data-presentation=type] .lunar-art{width:128px;height:128px;margin:-11px 0 2px -15px}
+html[data-presentation=type] .moon-phase{font-size:clamp(29px,4vw,51px);line-height:.94}
+@media(max-width:900px){html[data-presentation=type] .sheet{width:calc(100% - 52px)}html[data-presentation=type] .observatory{grid-template-columns:minmax(180px,.8fr) minmax(0,1.2fr);gap:28px}html[data-presentation=type] .sky{gap:21px 19px}html[data-presentation=type] .weather-row{gap:9px}html[data-presentation=type] #weather-icon{width:52px;height:52px}}
+@media(max-width:635px){html[data-presentation=type] .sheet{width:auto;margin-inline:22px}html[data-presentation=type] .observatory{grid-template-columns:1fr;gap:34px}html[data-presentation=type] .clock-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:13px 14px}html[data-presentation=type] .clock-time{font-size:28px}html[data-presentation=type] .date-line h1{font-size:clamp(42px,12vw,74px)}html[data-presentation=type] .sky{grid-template-columns:minmax(0,1fr) minmax(0,.8fr);gap:22px 14px}html[data-presentation=type] .local-panels{gap:19px}html[data-presentation=type] .sun-times{gap:8px}html[data-presentation=type] .sun-times time{font-size:clamp(18px,5vw,27px)}html[data-presentation=type] .temperature{font-size:49px}html[data-presentation=type] #weather-icon{width:44px;height:44px}html[data-presentation=type] .lunar-art{width:102px;height:102px;margin-left:-12px}html[data-presentation=type] .moon-phase{font-size:28px}}

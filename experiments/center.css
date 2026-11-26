@@ -1,0 +1,67 @@
+/* Globe first: the data follows the circle rather than the edges. */
+html[data-presentation=center]{--paper:#fafafa}
+html[data-presentation=center] .sheet{width:min(1240px,calc(100% - 64px));min-height:100svh;padding:12px 0 20px;display:flex;flex-direction:column}
+html[data-presentation=center] :is(.masthead,.observatory,.atlas,.sky,.local-panels,.local-panels>section,.figure-index,.separator,.section-line,.sky>.moon,.sky>.moon .section-line){border:0}
+html[data-presentation=center] :is(.figure-index,.separator){display:none}
+html[data-presentation=center] .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+html[data-presentation=center] .masthead{min-height:32px;padding:0}
+html[data-presentation=center] main{display:flex;flex-direction:column;flex:1;min-width:0}
+html[data-presentation=center] .date-line{width:min(600px,100%);margin-inline:auto;align-items:last baseline;padding:4px 4px 0;gap:10px}
+html[data-presentation=center] .date-line h1{font-size:clamp(30px,4.4vw,60px);line-height:.95;font-weight:600}
+html[data-presentation=center] .date-meta{font-size:9px;gap:5px}
+html[data-presentation=center] .local-time{font:600 clamp(26px,3.7vw,50px)/.95 var(--display);letter-spacing:-.035em;margin-bottom:0}
+html[data-presentation=center] .observatory{flex:1;position:relative;display:grid;grid-template-columns:minmax(158px,.37fr) minmax(0,1fr) minmax(145px,.37fr);align-items:start;align-content:center;column-gap:12px}
+html[data-presentation=center] .atlas{grid-area:1/2;min-width:0;padding:0}
+html[data-presentation=center] .atlas .map-frame{background:none;overflow:visible}
+html[data-presentation=center] #globe-stage{min-height:0;height:clamp(390px,61vh,670px);flex:0 0 auto}
+html[data-presentation=center] .globe-controls{width:min(280px,92%);margin:-6px auto 0;padding:0;border:0}
+html[data-presentation=center] .sky{display:contents}
+html[data-presentation=center] .local-panels{grid-area:1/1;display:grid;grid-template-columns:minmax(0,1fr);gap:8px;justify-self:end;padding-top:clamp(55px,12vh,138px);width:min(100%,198px)}
+html[data-presentation=center] .sky>.moon{grid-area:1/3;justify-self:start;width:min(100%,172px);padding:clamp(44px,10vh,118px) 0 0}
+html[data-presentation=center] .section-line{min-height:29px;padding:0;margin:0}
+html[data-presentation=center] .sky>.moon .section-line{justify-content:center;padding:0}
+html[data-presentation=center] :is(.weather-row,.weather-meta,.sun-times,.solar-art){margin-inline:0}
+html[data-presentation=center] .weather-row{gap:10px;justify-content:flex-start;margin-top:4px}
+html[data-presentation=center] .temperature{font-size:clamp(48px,6vw,78px)}
+html[data-presentation=center] #weather-icon{height:clamp(53px,6vw,77px);width:clamp(53px,6vw,77px)}
+html[data-presentation=center] .weather-meta{justify-content:flex-start;flex-wrap:wrap;min-height:32px;gap:0 10px}
+html[data-presentation=center] #weather-place{max-width:100%;justify-content:start;text-align:left;padding-left:0;min-height:44px}
+html[data-presentation=center] .solar-art{width:100%;margin:0 0 6px;max-height:75px}
+html[data-presentation=center] .sun .section-line{display:none}
+html[data-presentation=center] .sun-times time{font:600 clamp(18px,2.2vw,29px)/1 var(--display);letter-spacing:-.018em;white-space:nowrap}
+html[data-presentation=center] .moon-row{padding:0;gap:0}
+html[data-presentation=center] .moon-phase{font-size:clamp(17px,1.65vw,23px);line-height:1.1;white-space:nowrap}
+html[data-presentation=center] .lunar-art{width:min(100%,158px);height:auto}
+html[data-presentation=center] #clocks{grid-template-columns:repeat(8,minmax(0,1fr));width:min(1080px,100%);margin:16px auto 0;border:0;gap:6px 12px}
+html[data-presentation=center] #clocks button{border:0;align-items:center;justify-items:center;display:flex;flex-direction:column;justify-content:center;gap:4px;padding:7px 3px;background:none;text-align:center;min-height:54px}
+html[data-presentation=center] #clocks button:hover,html[data-presentation=center] #clocks button:focus-visible{background:#eaeaea}
+html[data-presentation=center] #clocks button[aria-pressed=true]::after{top:2px;right:calc(50% - 2px)}
+html[data-presentation=center] .clock-time{font:600 clamp(21px,2.4vw,32px)/.95 var(--display);letter-spacing:-.023em}
+html[data-presentation=center] .clock-offset{display:none}
+@media(max-width:850px){
+ html[data-presentation=center] .sheet{width:calc(100% - 36px)}
+ html[data-presentation=center] .observatory{grid-template-columns:minmax(128px,.43fr) minmax(0,1fr) minmax(108px,.39fr);column-gap:3px}
+ html[data-presentation=center] .weather-row{gap:5px}
+ html[data-presentation=center] .temperature{font-size:56px}
+ html[data-presentation=center] #globe-stage{height:clamp(335px,56vw,495px)}
+ html[data-presentation=center] #clocks{gap:5px}
+}
+@media(max-width:650px){
+ html[data-presentation=center] .sheet{width:auto;margin-inline:max(18px,env(safe-area-inset-left));padding-top:6px}
+ html[data-presentation=center] .date-line{display:flex;align-items:end;padding:1px 0 13px}
+ html[data-presentation=center] .date-block{display:block}
+ html[data-presentation=center] .date-line h1{font-size:clamp(36px,8.8vw,61px);margin-top:5px}
+ html[data-presentation=center] .observatory{grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:auto auto;align-content:start;gap:2px 16px}
+ html[data-presentation=center] .local-panels{grid-area:1/1;width:min(100%,174px);padding:5px 0 0;justify-self:center;gap:0}
+ html[data-presentation=center] .sky>.moon{grid-area:1/2;width:min(100%,162px);padding:5px 0 0;justify-self:center}
+ html[data-presentation=center] .atlas{grid-area:2/1/3/-1}
+ html[data-presentation=center] #globe-stage{height:clamp(257px,83vw,450px)}
+ html[data-presentation=center] .temperature{font-size:clamp(38px,12vw,63px)}
+ html[data-presentation=center] #weather-icon{width:53px;height:53px}
+ html[data-presentation=center] .solar-art{margin-top:0;max-height:54px}
+ html[data-presentation=center] .lunar-art{width:clamp(88px,31vw,132px)}
+ html[data-presentation=center] .moon-phase{font-size:clamp(16px,4.8vw,20px)}
+ html[data-presentation=center] #clocks{grid-template-columns:repeat(4,minmax(0,1fr));margin-top:12px;gap:8px 1px}
+ html[data-presentation=center] .clock-city{font-size:8px}
+ html[data-presentation=center] .clock-time{font-size:24px}
+}

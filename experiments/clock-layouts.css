@@ -1,0 +1,31 @@
+/* Three placements for the same local date and clock. */
+[data-clock-layout] .current-clock .zone{display:block;margin-top:7px;color:var(--quiet);font-size:10px;letter-spacing:.08em;text-align:inherit}
+[data-clock-layout] .current-clock{min-width:0;white-space:nowrap}
+html[data-clock-layout=shoulders] .date-line{width:min(952px,85%);align-items:end;padding-inline:0}
+html[data-clock-layout=shoulders] .current-clock{text-align:right}
+html[data-clock-layout=shoulders] .local-time{font-size:clamp(32px,4vw,58px)}
+html[data-clock-layout=meridian] main{justify-content:center}
+html[data-clock-layout=meridian] .observatory{flex:0 0 auto}
+html[data-clock-layout=meridian] .date-line{width:100%;justify-content:center;align-items:end;text-align:left;gap:clamp(16px,4.3vw,58px);padding-block:10px 5px}
+html[data-clock-layout=meridian] .date-line h1{font-size:clamp(35px,6.2vw,86px);line-height:.88;margin-top:5px}
+html[data-clock-layout=meridian] .current-clock{display:flex;flex-direction:column-reverse;align-items:flex-start;gap:6px;text-align:left}
+html[data-clock-layout=meridian] .current-clock .zone{margin:0}
+html[data-clock-layout=meridian] .local-time{font-size:clamp(33px,5.35vw,74px);line-height:.88}
+html[data-clock-layout=inline] .date-line{width:100%;justify-content:center;align-items:center;gap:14px;padding-block:5px 12px}
+html[data-clock-layout=inline] .date-block{display:flex;gap:5px;align-items:baseline;white-space:nowrap}
+html[data-clock-layout=inline] .date-line h1,html[data-clock-layout=inline] .local-time{font:500 clamp(15px,2.3vw,27px)/1 var(--display);margin:0;letter-spacing:.01em}
+html[data-clock-layout=inline] .date-line h1 em{letter-spacing:inherit}
+html[data-clock-layout=inline] .date-meta{font:inherit;font-size:clamp(8px,.86vw,11px)}
+html[data-clock-layout=inline] #year{display:none}
+html[data-clock-layout=inline] .current-clock{display:flex;align-items:baseline;gap:7px}
+html[data-clock-layout=inline] .current-clock::before{content:'·';color:var(--quiet);padding-inline-end:4px}
+html[data-clock-layout=inline] .current-clock .zone{margin:0}
+@media(max-width:650px){html[data-clock-layout=shoulders] .date-line{width:100%;padding-bottom:11px}html[data-clock-layout=shoulders] .current-clock .zone{margin-top:3px}html[data-clock-layout=meridian] .date-line{padding-bottom:9px}html[data-clock-layout=inline] .date-line{flex-wrap:wrap;gap:6px 10px}html[data-clock-layout=inline] .date-meta{padding-top:0}}
+
+/* A fixed count of monospaced characters keeps the readouts still. */
+html[data-presentation=center] :is(.local-time,.clock-time,.sun-times time){font-family:var(--mono);font-weight:400;letter-spacing:-.055em}
+html[data-clock-layout=meridian] .local-time{font-size:clamp(24px,4.1vw,56px)}
+html[data-clock-layout=shoulders] .local-time{font-size:clamp(25px,3.5vw,50px)}
+html[data-presentation=center] .clock-time{font-size:clamp(17px,1.9vw,26px)}
+html[data-presentation=center] .sun-times time{font-size:clamp(16px,1.58vw,23px)}
+@media(max-width:650px){html[data-presentation=center] .clock-time{font-size:clamp(15px,4.3vw,20px)}html[data-presentation=center] .sun-times time{font-size:clamp(14px,3.8vw,19px)}}

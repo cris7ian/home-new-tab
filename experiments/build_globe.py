@@ -5,7 +5,7 @@ import json
 from pathlib import Path
 import re
 
-from local_weather import local_weather
+from local_weather import exploring_weather, local_weather
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent
@@ -14,7 +14,7 @@ PREVIEW = HERE / 'preview-local'
 SRC = ROOT / 'src'
 VENDOR = ROOT / 'vendor'
 GLOBE = HERE / 'globe'
-SOLAR = HERE / 'solar'
+
 DESIGNS = {'atlas': 'Atlas', 'orbital': 'Orbital', 'grid': 'Grid'}
 
 
@@ -39,14 +39,14 @@ def css():
         font('Newsreader', f / 'newsreader-italic.woff2', style='italic'),
         font('Space Grotesk', f / 'space.woff2'), font('Barlow Condensed', f / 'barlow.woff2', 600),
         font('IBM Plex Mono', f / 'plex.woff2', 400), font('DM Mono', VENDOR / 'dm-mono.woff2', 400),
-        read(SRC / 'style.css'), read(HERE / 'variants.css'), read(SOLAR / 'solar.css')))
+        read(SRC / 'style.css'), read(HERE / 'variants.css'), read(HERE / 'year.css')))
 
 
 def app():
     js = read(SRC / 'app.js')
     # Keep the flat public site independent. The new dashboard shares its data logic.
     result = change(change(change(change(change(change(js,
-        "hour: '2-digit', minute: '2-digit', hourCycle: 'h23'", "hour: 'numeric', minute: '2-digit', hourCycle: 'h12'"),
+        "hour: '2-digit', minute: '2-digit', hourCycle: 'h23'", "hour: '2-digit', minute: '2-digit', hourCycle: 'h12'"),
         "const time = (instant, zone) => formatter(zone, timeOptions).format(instant);",
         "const time = (instant, zone) => clockText(parts(instant, zone, timeOptions));\n    const clockText = ({hour, minute, dayPeriod}) => `${hour}:${minute} ${dayPeriod.toUpperCase()}`;\n    function paintTime(node, value) {\n      const [clock, period] = value.split(' ');\n      if (node.dataset.value === value) return;\n      node.dataset.value = value;\n      node.replaceChildren(document.createTextNode(clock), ...(period ? [document.createTextNode(' '), html('span', 'meridiem', period)] : []));\n    }"),
         "$('map-pins').replaceChildren(...pins);", "$('map-pins').replaceChildren(...pins);\n      window.AlmanacGlobe?.setPlace(place, cities);"),
@@ -60,6 +60,7 @@ def app():
 
 
 GLOBE_MARKUP = '''<div id="globe-stage"><canvas id="globe" aria-label="Interactive Earth with time zones, day and night, and ISS position. Use arrow keys to rotate." tabindex="0"></canvas></div><div class="globe-controls"><div><button id="globe-home" type="button" aria-label="Center selected city" title="Center selected city"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true"><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2"/><path d="M12 1v4m0 14v4M1 12h4m14 0h4"/></svg></button><button id="globe-iss" type="button" aria-label="Center the International Space Station" title="Center the International Space Station">ISS</button></div><span id="iss-status"></span></div><svg hidden aria-hidden="true"><g id="map-pins"></g></svg>'''
+YEAR_MARKUP = '''<section class="year" id="year-progress" aria-labelledby="year-title"><div class="section-line"><h2 class="eyebrow" id="year-title">Year progress</h2><span class="year-number"></span></div><div class="year-content"><div class="year-readout"><span class="year-percent"></span><span class="year-count"></span></div><div class="year-days" aria-hidden="true"></div></div></section>'''
 SETTINGS_BUTTON = '''<button type="button" class="icon-button" id="settings-open" aria-label="Appearance and data sources" title="Appearance and data sources" aria-haspopup="dialog"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true"><path d="M5 6h14M5 12h14M5 18h14"/><path d="M9 4v4m6 2v4m-4 2v4" stroke-width="2"/></svg></button>'''
 SETTINGS = '''<dialog id="settings" aria-labelledby="settings-label"><div class="settings-title"><h2 id="settings-label">Settings</h2><button class="icon-button" type="button" id="settings-close" aria-label="Close settings">×</button></div><label for="appearance">Appearance</label><select id="appearance"><option value="atlas">Atlas</option><option value="orbital">Orbital</option><option value="grid">Grid</option></select><details><summary>Data sources</summary><p>Weather by <a href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer">Open-Meteo</a> (<a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener noreferrer">CC BY 4.0</a>). Temperatures are rounded. City search uses <a href="https://www.geonames.org/" target="_blank" rel="noopener noreferrer">GeoNames</a> via Open-Meteo.</p><p>ISS positions by <a href="https://wheretheiss.at/" target="_blank" rel="noopener noreferrer">Where the ISS at?</a>. Boundaries by Natural Earth.</p></details></dialog>'''
 
@@ -72,7 +73,15 @@ def page(design, styles, scripts, fixed=False):
     globe = GLOBE_MARKUP.replace('id="globe-home"', 'id="globe-home" data-managed="true"').replace('Center selected city', 'Return to my location')
     source = change(source, '<!-- @MAP@ -->', globe)
     source = change(source, '<span id="place-name">Madrid</span>', '<span id="place-name">Set location</span>')
-    source = change(source, '  </main>', read(SOLAR / 'panel.html') + '\n  </main>')
+    source = change(source, '      <div class="sky">', '      <div class="sky">\n' + YEAR_MARKUP + '\n        <div class="local-panels">')
+    source = change(source, '        <section class="moon"', '        </div>\n        <section class="moon"')
+    # Put the phase after the illustration in reading order as well as visually.
+    match = re.search(r'            (<div><div id="moon-phase"[^\n]*</div>)\n(            <svg class="lunar-art"[\s\S]*?            </svg>)', source)
+    source = change(source, match[0], match[2] + '\n            ' + match[1])
+    source = change(source, 'r="49" fill="#d8d8d8" stroke="#929292"', 'r="49" fill="#343434" stroke="#777"')
+    source = source.replace('slope="2" intercept="-.62"', 'slope="1.58" intercept="-.31"')
+    source = change(source, 'fill="#acacac"', 'fill="#bdbdbd"')
+    source = change(source, '<g clip-path="url(#moon-disk)">', '<g clip-path="url(#moon-disk)"><rect x="15" y="15" width="98" height="98" filter="url(#lunar-grain)" opacity=".15"/>')
     source = change(source, 'stroke-width=".85"><circle r="8.6"', 'stroke-width=".85"><circle class="sun-halo" r="10.2" stroke-dasharray="1 2"/><circle r="8.6"')
     source = change(source, 'stroke-width=".7"><circle r="7"', 'stroke-width=".7"><circle class="sun-halo" r="9.6" fill="none" stroke-dasharray="1 2"/><circle r="7"')
     settings_button = SETTINGS_BUTTON.replace('Appearance and data sources', 'Data sources') if fixed else SETTINGS_BUTTON
@@ -81,6 +90,74 @@ def page(design, styles, scripts, fixed=False):
     settings = SETTINGS if not fixed else re.sub(r'<label for="appearance">.*?</select>', '', SETTINGS)
     source = change(source, '<script>/* @ASTRONOMY@ */</script>\n<script>/* @APP@ */</script>', settings + '\n' + scripts)
     return source
+
+
+def type_proposal(style, assets, footer):
+    icons = {
+        'Sunrise': '<path d="M2 17h20M5 15a7 7 0 0 1 14 0M12 2v8m-3-5 3-3 3 3"/>',
+        'Sunset': '<path d="M2 17h20M5 15a7 7 0 0 1 14 0M12 1v8m-3-3 3 3 3-3"/>',
+    }
+    plain_app = change(assets['dashboard.js'], "const button = html('button', 'clock');\n      button.type = 'button';", "const button = html('div', 'clock');")
+    plain_app = change(plain_app, "      button.addEventListener('click', () => {\n        explored = city;\n        renderGlobe(true);\n      });\n", '')
+    plain_app = change(plain_app, "        button.setAttribute('aria-pressed', String(city === selectedCity));\n", '')
+    type_assets = [assets['appearance.js'], assets['astronomy.js'], plain_app, assets['year.js']]
+    scripts = '\n'.join(f'<script>\n{value}\n</script>' for value in type_assets)
+    source = page('grid', f'<style>{style}\n{read(HERE / "type.css")}</style>', scripts, fixed=True)
+    source = change(source, 'data-fixed-design="true"', 'data-fixed-design="true" data-presentation="type"')
+    source = re.sub(r'        <div class="map-frame">[\s\S]*?        </div>\n', '', source, count=1)
+    source = re.sub(r'          <svg class="solar-art"[\s\S]*?</svg>\n', '', source, count=1)
+    # Keep an inert marker for the shared sunrise/sunset renderer.
+    source = change(source, '<div class="sun-times">', '<span id="sun-marker" hidden></span><div class="sun-times">')
+    for name, path in icons.items():
+        label = f'<span class="eyebrow">{name}</span>'
+        icon = f'<svg class="sun-pictogram" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.15" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">{path}</svg>'
+        source = change(source, label, icon + label)
+    source = change(source, '<div class="year-days" aria-hidden="true"></div>', '<div class="year-days" hidden></div>')
+    source = change(source, '<circle cx="64" cy="64" r="55" fill="none" stroke="#aeaeae" stroke-width=".65" stroke-dasharray="1 3"/>', '')
+    source = change(source, '<path d="M64 4v6m0 108v6M4 64h6m108 0h6" stroke="#7d7d7d" stroke-width=".7"/>', '')
+    return source + footer
+
+
+def globe_page(styles, scripts):
+    source = page('grid', styles, scripts, fixed=True)
+    source = change(source, 'data-fixed-design="true"', 'data-fixed-design="true" data-presentation="center"')
+    source = change(source, YEAR_MARKUP, '')
+    clocks = '        <div id="clocks" class="clock-grid" aria-label="City clocks"></div>'
+    source = change(source, clocks, '')
+    source = change(source, '  </main>', clocks + '\n  </main>')
+    source = change(source, '        <div class="section-line"><h2 class="eyebrow" id="atlas-title">World time</h2><span class="figure-index" aria-hidden="true">01</span></div>', '        <h2 id="atlas-title" class="sr-only">World time</h2>')
+    image = b64encode((HERE / 'moon-mosaic.jpg').read_bytes()).decode('ascii')
+    moon = f'''<svg class="lunar-art" viewBox="0 0 128 128" aria-hidden="true">
+      <defs>
+        <clipPath id="moon-disk"><circle cx="64" cy="64" r="49"/></clipPath>
+        <clipPath id="moon-light"><path id="moon-lit" d="M0 0"/></clipPath>
+        <image id="moon-surface" x="15" y="15" width="98" height="98" href="data:image/jpeg;base64,{image}"/>
+      </defs>
+      <g clip-path="url(#moon-disk)">
+        <circle cx="64" cy="64" r="49" fill="#141414"/>
+        <use href="#moon-surface" opacity=".16"/>
+        <g clip-path="url(#moon-light)"><use href="#moon-surface"/></g>
+      </g>
+    </svg>'''
+    source, count = re.subn(r'<svg class="lunar-art"[\s\S]*?</svg>', lambda _: moon, source)
+    if count != 1:
+        raise ValueError('Expected one Moon illustration')
+    source = change(source, 'Boundaries by Natural Earth.</p>', 'Boundaries by Natural Earth.</p><p>Moon mosaic by <a href="https://svs.gsfc.nasa.gov/5001/" target="_blank" rel="noopener noreferrer">NASA’s Scientific Visualization Studio</a>.</p>')
+    source = change(source, 'aria-label="Data sources" title="Data sources"', 'aria-label="Settings" title="Settings"')
+    source = change(source, '<details><summary>Data sources</summary>', '<label for="theme">Theme</label><select id="theme"><option value="system">System</option><option value="light">Light</option><option value="dark">Dark</option></select><details><summary>Data sources</summary>')
+    return source
+
+
+def clock_page(styles, scripts, layout):
+    if layout not in ('shoulders', 'meridian', 'inline'):
+        raise ValueError(f'Unknown date and time layout: {layout}')
+    source = globe_page(styles, scripts)
+    source = change(source, 'data-presentation="center"', f'data-presentation="center" data-clock-layout="{layout}"')
+    zone = '<span class="eyebrow zone" id="local-zone"></span>'
+    clock = '<div id="local-time" class="local-time"></div>'
+    source = change(source, zone, '')
+    readout = '<div class="current-clock" aria-label="Local time">' + clock + zone + '</div>'
+    return change(source, clock, readout)
 
 
 def main():
@@ -93,7 +170,10 @@ def main():
             raise ValueError(f'Invalid or duplicate globe asset: {name}')
         assets[name_path.name] = read(GLOBE / name_path)
     assets['dashboard.js'] = app()
-    assets['solar.js'] = read(SOLAR / 'solar.js')
+    standalone_app = assets['dashboard.js']
+    assets['dashboard.js'] = exploring_weather(standalone_app)
+    for previous in ('solar.js', 'year.js'):
+        (EXT / previous).unlink(missing_ok=True)
     style = css()
     licenses = [*sorted((HERE / 'fonts').glob('*-OFL.txt')), VENDOR / 'dm-mono-OFL.txt', *sorted(GLOBE.glob('*.LICENSE'))]
     notices = 'Natural Earth v5.1.2 map data: public domain.\n\n' + '\n\n'.join(f'{p.name}\n{read(p)}' for p in licenses)
@@ -102,17 +182,29 @@ def main():
         if re.search(r'</script', value, re.I):
             raise ValueError(f'Script terminator in {name}')
         (EXT / name).write_text(value, encoding='utf-8')
-    (EXT / 'home.css').write_text(style, encoding='utf-8')
+    centered_style = '\n'.join((style, read(HERE / 'center.css'), read(HERE / 'clock-layouts.css'), read(HERE / 'theme.css')))
+    (EXT / 'home.css').write_text(centered_style, encoding='utf-8')
     (EXT / 'manifest.json').write_text(read(HERE / 'manifest.json'), encoding='utf-8')
-    (EXT / 'newtab.html').write_text(page('grid', '<link rel="stylesheet" href="home.css">', '\n'.join(f'<script defer src="{name}"></script>' for name in assets), fixed=True), encoding='utf-8')
+    (EXT / 'newtab.html').write_text(clock_page('<link rel="stylesheet" href="home.css">', '\n'.join(f'<script defer src="{name}"></script>' for name in assets), 'meridian'), encoding='utf-8')
     inline = '\n'.join(f'<script>\n{value}\n</script>' for value in assets.values())
     footer = '\n<!--\n' + notices.replace('--', '—') + '\n-->\n'
+    for layout in ('shoulders', 'meridian', 'inline'):
+        (PREVIEW / f'globe-{layout}.html').write_text(clock_page(f'<style>{centered_style}</style>', inline, layout) + footer, encoding='utf-8')
+    (PREVIEW / 'globe.html').write_text(clock_page(f'<style>{centered_style}</style>', inline, 'meridian') + footer, encoding='utf-8')
+    assets['dashboard.js'] = standalone_app
+    assets['year.js'] = read(HERE / 'year.js')
+    inline = '\n'.join(f'<script>\n{value}\n</script>' for value in assets.values())
     (PREVIEW / 'grid-release.html').write_text(page('grid', f'<style>{style}</style>', inline, fixed=True) + footer, encoding='utf-8')
     for design in DESIGNS:
         (PREVIEW / f'{design}.html').write_text(page(design, f'<style>{style}</style>', inline) + footer, encoding='utf-8')
+    (PREVIEW / 'type.html').write_text(type_proposal(style, assets, footer), encoding='utf-8')
+
     links = ''.join(f'<li><a href="{name}.html?design={name}">{html.escape(label)}</a></li>' for name, label in DESIGNS.items())
+    links += '<li><a href="type.html">Type &amp; Icons</a></li>'
+    links += '<li><a href="globe.html">Globe</a></li>'
+    links += ''.join(f'<li><a href="globe-{name}.html">Globe · {name.title()}</a></li>' for name in ('shoulders', 'meridian', 'inline'))
     (PREVIEW / 'index.html').write_text(f'<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Home — Proposals</title><style>body{{margin:9vh auto;width:min(80%,600px);font:24px/1.8 Georgia;background:#fafafa;color:#111}}a{{color:inherit}}li{{border-top:1px solid #ccc;padding:8px}}ul{{padding:0;list-style:none}}</style><h1>Home</h1><ul>{links}</ul></html>', encoding='utf-8')
-    print('Built 3 proposals and extension/ (production unchanged)')
+    print('Built local proposals and the globe release (live site unchanged)')
 
 
 if __name__ == '__main__':

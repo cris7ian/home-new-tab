@@ -70,6 +70,46 @@ def local_weather(js: str) -> str:
     locateIfAllowed();""")
 
 
+def exploring_weather(js: str) -> str:
+    """Use an explored city temporarily; keep the saved location separate."""
+    js = _replace(js, '    let explored = null;', '    let explored = null;\n    const displayedPlace = () => explored || home;')
+    js = _replace(js, '        explored = city;\n        renderGlobe(true);', '        explored = city;\n        renderGlobe(true);\n        switchForecast();')
+    js = _replace(js, '      const label = home?.label || home?.name;', '      const view = displayedPlace();\n      const label = view?.label || view?.name;')
+    js = _replace(js, '''      weatherRequest?.abort();
+      home = next;
+      if (explicit) explored = null;
+      sun = null;
+      renderHome();
+      renderGlobe(explicit);
+      paintSun(new Date());''', '''      home = next;
+      if (explicit) explored = null;
+      renderGlobe(explicit);
+      if (!explored) switchForecast();
+    }
+
+    function switchForecast() {
+      weatherRequest?.abort();
+      weatherRequest = null;
+      sun = null;
+      renderHome();
+      paintSun(new Date());''')
+    js = _replace(js, '''      if (!home) { openLocation(); return; }
+      explored = null;
+      renderGlobe(true);''', '''      if (!home) {
+        if (explored) { explored = null; renderGlobe(true); switchForecast(); }
+        openLocation();
+        return;
+      }
+      const returning = explored !== null;
+      explored = null;
+      renderGlobe(true);
+      if (returning) switchForecast();''')
+    js = _replace(js, '      if (!home || (!force', '      if (!displayedPlace() || (!force')
+    js = _replace(js, '      const target = home;', '      const target = displayedPlace();')
+    js = _replace(js, '      const zone = home?.zone || deviceZone();\n      if (home) {', '      const view = displayedPlace();\n      const zone = view?.zone || deviceZone();\n      if (view) {')
+    return _replace(js, '{ ...home, zone }', '{ ...view, zone }')
+
+
 HOME_STATE = """    function readManualHome() {
       for (const key of [storageKey, legacyStorageKey]) {
         try {
