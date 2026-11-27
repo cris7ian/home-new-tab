@@ -455,12 +455,15 @@ def website_link(browser):
     for width, height in ((1440, 900), (320, 720)):
         page = browser.new_page(viewport={'width': width, 'height': height})
         page.goto(f'{BASE}globe.html')
-        link = page.get_by_role('link', name='GitHub', exact=True)
+        link = page.get_by_role('link', name='Make this your new tab', exact=True)
         expect(link).to_be_visible()
-        expect(link).to_have_attribute('href', 'https://github.com/cris7ian/home-new-tab')
+        expect(link).to_have_attribute('href', 'https://github.com/cris7ian/home-new-tab#install-in-chrome')
         expect(link).to_have_attribute('target', '_blank')
         expect(link).to_have_attribute('rel', 'noopener noreferrer')
         assert page.evaluate('document.documentElement.scrollWidth === innerWidth')
+        link_box = link.bounding_box()
+        settings_box = page.locator('#settings-open').bounding_box()
+        assert link_box['x'] + link_box['width'] <= settings_box['x']
         page.close()
 
 
@@ -530,7 +533,7 @@ def main():
         geo_sun_regression(browser, errors)
         print('Location and sun: nearby city label, overnight countdown and midnight continuity, daytime movement and polar night')
         website_link(browser)
-        print('Website: GitHub link is visible on desktop and mobile')
+        print('Website: installation link is visible on desktop and mobile')
         page = browser.new_page(viewport={'width': 320, 'height': 720})
         collect_errors(page, errors)
         page.goto(f'{BASE}globe.html')
@@ -551,7 +554,7 @@ def main():
                     if 'ERR_ABORTED' not in str(error):
                         raise
                 page.wait_for_selector('#globe', timeout=15000)
-                expect(page.get_by_role('link', name='GitHub', exact=True)).to_have_count(0)
+                expect(page.locator('.github-link')).to_have_count(0)
                 assert page.evaluate('location.protocol') == 'chrome-extension:'
                 assert page.evaluate('Boolean(chrome.runtime.id)')
                 assert page.evaluate('chrome.permissions.contains({permissions:["geolocation"]})')

@@ -105,7 +105,7 @@ CITY_CLOCK_SETTINGS = '''<section class="city-clock-settings" aria-labelledby="c
   <ul id="city-clock-list"></ul>
   <button type="button" id="add-city-clock" aria-haspopup="dialog">Add city</button>
 </section>'''
-WEB_STYLE = '''.github-link{display:inline-flex;align-items:center;min-height:44px;color:var(--quiet);text-underline-offset:3px}.github-link:hover{color:var(--ink)}'''
+WEB_STYLE = '''.github-link{display:inline-flex;align-items:center;gap:.35em;min-height:44px;color:var(--quiet);text-underline-offset:3px}.github-link:hover{color:var(--ink)}'''
 FIRST_PAINT = '''<style>
 :root{color-scheme:light dark;--theme-paper:light-dark(#fafafa,#141414);--theme-ink:light-dark(#131313,#f3f3f3);background:var(--theme-paper)}
 :root[data-theme=light]{color-scheme:light}
@@ -228,7 +228,7 @@ def clock_page(styles, scripts, layout, *, appearance):
 
 def web_clock_page(styles, scripts, layout, *, appearance):
     source = clock_page(styles, scripts, layout, appearance=appearance)
-    link = '<a class="eyebrow github-link" href="https://github.com/cris7ian/home-new-tab" target="_blank" rel="noopener noreferrer">GitHub</a>'
+    link = '<a class="eyebrow github-link" href="https://github.com/cris7ian/home-new-tab#install-in-chrome" target="_blank" rel="noopener noreferrer">Make this your new tab <span aria-hidden="true">↗</span></a>'
     return change(source, '<div></div><div class="masthead-right">', link + '<div class="masthead-right">')
 
 
