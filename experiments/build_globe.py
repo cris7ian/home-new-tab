@@ -209,7 +209,7 @@ def globe_page(styles, scripts, appearance):
         raise ValueError('Expected one Moon illustration')
     source = change(source, 'Boundaries by Natural Earth.</p>', 'Boundaries by Natural Earth.</p><p>Moon mosaic by <a href="https://svs.gsfc.nasa.gov/5001/" target="_blank" rel="noopener noreferrer">NASA’s Scientific Visualization Studio</a>. Nearby place labels use a reduced <a href="https://www.geonames.org/" target="_blank" rel="noopener noreferrer">GeoNames</a> gazetteer (<a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener noreferrer">CC BY 4.0</a>).</p>')
     source = change(source, 'aria-label="Data sources" title="Data sources"', 'aria-label="Settings" title="Settings"')
-    source = change(source, '<details><summary>Data sources</summary>', '<label for="theme">Theme</label><select id="theme"><option value="system">System</option><option value="light">Light</option><option value="dark">Dark</option></select><details><summary>Data sources</summary>')
+    source = change(source, '<details><summary>Data sources</summary>', '<label for="theme">Theme</label><select id="theme"><option value="system">System</option><option value="light">Light</option><option value="dark">Dark</option><optgroup label="Color themes"><option value="gruvbox">Gruvbox</option><option value="deep-ocean">Deep Ocean</option><option value="tokyo-night">Tokyo Night</option><option value="dracula">Dracula</option><option value="oxblood">Oxblood</option><option value="unit-01">Unit‑01</option></optgroup></select><details><summary>Data sources</summary>')
     source = change(source, '<details><summary>Data sources</summary>', CITY_CLOCK_SETTINGS + '<details><summary>Data sources</summary>')
     return source
 

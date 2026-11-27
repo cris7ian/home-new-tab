@@ -6,6 +6,46 @@ html[data-theme=dark] .solar-art{filter:invert(.88)}
 html[data-theme=dark] .solar-art #sun-marker>circle:nth-of-type(2),html[data-theme=dark] .solar-art .sun-noon circle:not(.sun-halo),html[data-theme=dark] .solar-art>circle{fill:#ededed}
 html[data-theme=dark] :is(.locate,.search-row button){background:#ededed;color:#141414;border-color:#ededed}
 html[data-theme=dark] :is(.locate,.search-row button):hover{background:#ccc}
+/* Color palettes share the same UI roles. Canvas colors resolve to literal hex values. */
+:root[data-theme=gruvbox]{
+  --theme-paper:#282828;--theme-ink:#ebdbb2;--quiet:#c7b995;--accent:#fabd2f;--signal:#b8bb26;
+  --globe-water:#37322b;--globe-land:#746849;--globe-coast:#ad9b65;--globe-grid:#83765d;
+}
+:root[data-theme=deep-ocean]{
+  --theme-paper:#071827;--theme-ink:#e5f4ff;--quiet:#9fbdd5;--accent:#55c8ff;--signal:#82e9dc;
+  --globe-water:#112e4b;--globe-land:#265d87;--globe-coast:#6bb9dc;--globe-grid:#41749a;
+}
+:root[data-theme=tokyo-night]{
+  --theme-paper:#1a1b26;--theme-ink:#c0caf5;--quiet:#9aa9d7;--accent:#7aa2f7;--signal:#bb9af7;
+  --globe-water:#252a42;--globe-land:#414f78;--globe-coast:#7e95ce;--globe-grid:#5b658f;
+}
+:root[data-theme=dracula]{
+  --theme-paper:#282a36;--theme-ink:#f8f8f2;--quiet:#bfc4dc;--accent:#bd93f9;--signal:#ff79c6;
+  --globe-water:#33334a;--globe-land:#61517d;--globe-coast:#a58bbf;--globe-grid:#78638d;
+}
+:root[data-theme=oxblood]{
+  --theme-paper:#110d10;--theme-ink:#f5e3e7;--quiet:#d4aab5;--accent:#ef8fa7;--signal:#ffb5ac;
+  --globe-water:#2a121c;--globe-land:#6f293f;--globe-coast:#b45d74;--globe-grid:#8b4158;
+}
+:root[data-theme=unit-01]{
+  --theme-paper:#1d132a;--theme-ink:#f0e6fb;--quiet:#c4afd9;--accent:#b9f653;--signal:#ffad65;
+  --globe-water:#33234b;--globe-land:#62428a;--globe-coast:#a485d1;--globe-grid:#805eab;
+}
+html[data-presentation=center][data-theme]:not([data-theme=light],[data-theme=dark]){
+  color-scheme:dark;
+  --rule:color-mix(in srgb,var(--quiet) 55%,var(--paper));
+  --faint:color-mix(in srgb,var(--quiet) 23%,var(--paper));
+  --hover:color-mix(in srgb,var(--accent) 15%,var(--paper));
+  --globe-zones:var(--globe-coast);--globe-edge:var(--globe-coast);
+  --globe-night:rgba(0,0,0,.68);--globe-pin:var(--accent);--globe-iss:var(--signal);
+  & .local-time,& .temperature,& .github-link{color:var(--accent)}
+  & #clocks button:is(:hover,:focus-visible),& #city-results button:hover{background:var(--hover)}
+  & :is(.locate,.search-row button){background:var(--accent);color:var(--paper);border-color:var(--accent)}
+  & :is(.locate,.search-row button):hover{background:var(--signal)}
+  & .solar-art>path{stroke:var(--quiet)}
+  & .solar-art :is(.sun-noon,#sun-marker),& .solar-art>circle{stroke:var(--accent)}
+  & .solar-art :is(#sun-marker>circle:nth-of-type(2),.sun-noon circle:not(.sun-halo)){fill:var(--accent)}
+}
 #theme{width:100%;min-height:44px;padding:0 8px;background:var(--paper);color:var(--ink);border:1px solid var(--rule);border-radius:0;font:inherit}
 .search-row input:focus{outline:none;border-bottom-color:var(--quiet);box-shadow:inset 0 -1px 0 var(--quiet)}
 @media(forced-colors:active){.search-row input:focus{outline:1px solid Highlight;outline-offset:0}}

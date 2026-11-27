@@ -333,11 +333,51 @@ def theme_behavior(page):
     page.keyboard.press('Escape')
 
 
+COLOR_THEMES = {
+    'gruvbox': 'rgb(40, 40, 40)',
+    'deep-ocean': 'rgb(7, 24, 39)',
+    'tokyo-night': 'rgb(26, 27, 38)',
+    'dracula': 'rgb(40, 42, 54)',
+    'oxblood': 'rgb(17, 13, 16)',
+    'unit-01': 'rgb(29, 19, 42)',
+}
+
+
+def color_themes(page, peer=None):
+    root = page.locator('html')
+    picker = page.locator('#theme')
+    globe = page.locator('#globe')
+    page.locator('#settings-open').click()
+    previous = globe.evaluate('(el) => el.toDataURL()')
+    for name, background in COLOR_THEMES.items():
+        picker.select_option(name)
+        expect(root).to_have_attribute('data-theme', name)
+        expect(page.locator('body')).to_have_css('background-color', background)
+        expect(page.locator('#settings')).to_have_css('background-color', background)
+        expect(picker).to_have_css('color-scheme', 'dark')
+        page.wait_for_function('(before) => document.querySelector("#globe").toDataURL() !== before', arg=previous)
+        previous = globe.evaluate('(el) => el.toDataURL()')
+        if peer:
+            expect(peer.locator('html')).to_have_attribute('data-theme', name)
+    page.emulate_media(color_scheme='light')
+    page.reload()
+    expect(root).to_have_attribute('data-theme', 'unit-01')
+    page.locator('#settings-open').click()
+    expect(picker).to_have_value('unit-01')
+    picker.select_option('system')
+    expect(root).to_have_attribute('data-theme', 'light')
+    if peer:
+        expect(peer.locator('html')).to_have_attribute('data-theme', 'light')
+    page.keyboard.press('Escape')
+
+
 def early_theme(browser):
     for system, saved, expected in (
         ('dark', 'system', 'dark'),
         ('light', 'dark', 'dark'),
         ('dark', 'light', 'light'),
+        ('light', 'tokyo-night', 'tokyo-night'),
+        ('light', 'invalid', 'light'),
     ):
         page = browser.new_page(color_scheme=system)
         page.add_init_script(f"localStorage.setItem('home-new-tab.theme.v1', '{saved}');")
@@ -350,7 +390,7 @@ def early_theme(browser):
 
         page.route(url, early_markup)
         assert page.goto(url).ok
-        background = 'rgb(20, 20, 20)' if expected == 'dark' else 'rgb(250, 250, 250)'
+        background = {'dark': 'rgb(20, 20, 20)', 'light': 'rgb(250, 250, 250)', **COLOR_THEMES}[expected]
         assert page.locator('body').evaluate('el => getComputedStyle(el).backgroundColor') == background, (system, saved)
         assert page.locator('html').evaluate('el => getComputedStyle(el).backgroundColor') == background, (system, saved)
         expect(page.locator('html')).to_have_attribute('data-theme', expected)
@@ -478,6 +518,11 @@ def main():
     with sync_playwright() as p:
         browser = p.chromium.launch(**browser_args)
         early_theme(browser)
+        theme_page = browser.new_page(viewport={'width': 320, 'height': 720}, color_scheme='light')
+        theme_page.goto(f'{BASE}globe.html')
+        color_themes(theme_page)
+        theme_page.close()
+        print('Website: all six color palettes, globe redraw, mobile settings and persistence')
         for design in DESIGNS:
             desktop = browser.new_context(viewport={'width': 1440, 'height': 900}, timezone_id='Europe/Madrid')
             page = desktop.new_page()
@@ -587,6 +632,9 @@ def main():
                 check(second, 'grid')
                 expect(second.locator('#place-name')).to_contain_text('Madrid')
                 print('Unpacked MV3: Chrome new-tab override, system and saved themes, globe redraw, and persistent weather location')
+                page.emulate_media(color_scheme='light')
+                color_themes(second, peer=page)
+                print('Unpacked MV3: six color palettes redraw the globe and synchronize across new tabs')
                 globe_focus(second)
                 configurable_clocks(second, peer=page)
                 print('Unpacked MV3: configurable city clocks and synchronization across new tabs')

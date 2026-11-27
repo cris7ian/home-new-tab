@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "Pale Blue Dot Tab",
-  "version": "1.0.1",
-  "description": "A monochrome new tab with an interactive Earth, ISS tracking, world clocks, weather, sunrise and moon phase.",
+  "version": "1.1.0",
+  "description": "A customizable new tab with an interactive Earth, ISS tracking, world clocks, weather, sunrise and moon phase.",
   "chrome_url_overrides": {"newtab": "newtab.html"},
   "permissions": ["geolocation"],
   "host_permissions": [

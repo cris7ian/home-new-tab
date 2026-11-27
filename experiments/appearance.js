@@ -4,7 +4,7 @@
   const designs = new Set(['atlas', 'orbital', 'grid']);
   const key = 'home-new-tab.appearance.v1';
   const themeKey = 'home-new-tab.theme.v1';
-  const themes = new Set(['system', 'light', 'dark']);
+  const themes = new Set(['system', 'light', 'dark', 'gruvbox', 'deep-ocean', 'tokyo-night', 'dracula', 'oxblood', 'unit-01']);
   const systemDark = matchMedia('(prefers-color-scheme: dark)');
   let preferred = 'system';
   const chosen = new URLSearchParams(location.search).get('design');
