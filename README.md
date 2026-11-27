@@ -4,9 +4,15 @@ A quieter new tab, with a view of the world. Pale Blue Dot Tab brings together a
 
 ![Globe-first dashboard with local weather, Moon and world clocks](docs/preview.png)
 
-[Try Pale Blue Dot Tab in your browser](https://home.salsaparapizza.com/) · [Privacy policy](https://home.salsaparapizza.com/privacy.html)
+[Try Pale Blue Dot Tab in your browser](https://home.salsaparapizza.com/) · [Add to Chrome](https://chromewebstore.google.com/detail/home-new-tab/pgeahicgbpcfobknhbgjhlldjpapbgol) · [Privacy policy](https://home.salsaparapizza.com/privacy.html)
 
 ## Install in Chrome
+
+[Add Pale Blue Dot Tab from the Chrome Web Store](https://chromewebstore.google.com/detail/home-new-tab/pgeahicgbpcfobknhbgjhlldjpapbgol). Chrome installs the extension and keeps it updated.
+
+To install a build from GitHub instead, use the manual steps below.
+
+### Manual install from GitHub
 
 1. Open the [release](https://github.com/cris7ian/pale-blue-dot-tab/releases/tag/v1.1.0) while signed in to GitHub.
 2. Download `pale-blue-dot-tab-v1.1.0.zip` and extract it to a folder you plan to keep.

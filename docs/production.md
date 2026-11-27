@@ -26,6 +26,8 @@ Compare its `commit` with the intended `main` commit. The website workflow does 
 
 ## Chrome extension releases
 
+The published listing is [Add to Chrome](https://chromewebstore.google.com/detail/home-new-tab/pgeahicgbpcfobknhbgjhlldjpapbgol). The website masthead and the README link to this listing, and keep the GitHub manual install as the alternative path.
+
 The manual-install ZIP contains an `extension/` folder. The Chrome Web Store ZIP has `manifest.json` at its root. A GitHub release does not upload or submit a Store update.
 
 To prepare a Store package and screenshots from a committed release:

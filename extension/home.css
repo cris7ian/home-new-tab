@@ -285,7 +285,7 @@ html[data-presentation=center][data-theme]:not([data-theme=light],[data-theme=da
   --hover:color-mix(in srgb,var(--accent) 15%,var(--paper));
   --globe-zones:var(--globe-coast);--globe-edge:var(--globe-coast);
   --globe-night:rgba(0,0,0,.68);--globe-pin:var(--accent);--globe-iss:var(--signal);
-  & .local-time,& .temperature,& .github-link{color:var(--accent)}
+  & .local-time,& .temperature,& .masthead-link{color:var(--accent)}
   & #clocks button:is(:hover,:focus-visible),& #city-results button:hover{background:var(--hover)}
   & :is(.locate,.search-row button){background:var(--accent);color:var(--paper);border-color:var(--accent)}
   & :is(.locate,.search-row button):hover{background:var(--signal)}

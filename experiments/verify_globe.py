@@ -492,18 +492,26 @@ def geo_sun_regression(browser, errors):
 
 
 def website_link(browser):
+    expected = (
+        ('Add to Chrome',
+         'https://chromewebstore.google.com/detail/home-new-tab/pgeahicgbpcfobknhbgjhlldjpapbgol'),
+        ('GitHub', 'https://github.com/cris7ian/pale-blue-dot-tab#install-in-chrome'),
+    )
     for width, height in ((1440, 900), (320, 720)):
         page = browser.new_page(viewport={'width': width, 'height': height})
         page.goto(f'{BASE}globe.html')
-        link = page.get_by_role('link', name='Make this your new tab', exact=True)
-        expect(link).to_be_visible()
-        expect(link).to_have_attribute('href', 'https://github.com/cris7ian/pale-blue-dot-tab#install-in-chrome')
-        expect(link).to_have_attribute('target', '_blank')
-        expect(link).to_have_attribute('rel', 'noopener noreferrer')
+        boxes = []
+        for name, href in expected:
+            link = page.get_by_role('link', name=name, exact=True)
+            expect(link).to_be_visible()
+            expect(link).to_have_attribute('href', href)
+            expect(link).to_have_attribute('target', '_blank')
+            expect(link).to_have_attribute('rel', 'noopener noreferrer')
+            boxes.append(link.bounding_box())
         assert page.evaluate('document.documentElement.scrollWidth === innerWidth')
-        link_box = link.bounding_box()
         settings_box = page.locator('#settings-open').bounding_box()
-        assert link_box['x'] + link_box['width'] <= settings_box['x']
+        assert boxes[0]['x'] + boxes[0]['width'] <= boxes[1]['x']
+        assert boxes[-1]['x'] + boxes[-1]['width'] <= settings_box['x']
         page.close()
 
 
@@ -599,7 +607,7 @@ def main():
                     if 'ERR_ABORTED' not in str(error):
                         raise
                 page.wait_for_selector('#globe', timeout=15000)
-                expect(page.locator('.github-link')).to_have_count(0)
+                expect(page.locator('.masthead-link')).to_have_count(0)
                 assert page.evaluate('location.protocol') == 'chrome-extension:'
                 assert page.evaluate('Boolean(chrome.runtime.id)')
                 assert page.evaluate('chrome.permissions.contains({permissions:["geolocation"]})')
