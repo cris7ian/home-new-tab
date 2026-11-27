@@ -30,7 +30,7 @@ jobs:
       - run: python3 experiments/build_globe.py
 
   deploy:
-    name: Deploy to production-server
+    name: Deploy
     needs: check
     if: github.repository == 'cris7ian/home-new-tab' && github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     runs-on: [self-hosted, Linux, X64, home-new-tab-deploy]
@@ -39,6 +39,8 @@ jobs:
       group: home-new-tab-production
       cancel-in-progress: false
     steps:
+      - name: Mask runner home
+        run: echo "::add-mask::$HOME"
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           persist-credentials: false
