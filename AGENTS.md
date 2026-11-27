@@ -1,4 +1,4 @@
-# Home New Tab
+# Pale Blue Dot Tab
 
 - Build and test with the commands in `README.md`, including the Chrome new-tab override.
 - Pushes to `main` deploy the site and privacy policy. The production `public/` directory is live; never build previews into it. See `docs/production.md`.

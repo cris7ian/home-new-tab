@@ -1,22 +1,22 @@
-# Home New Tab
+# Pale Blue Dot Tab
 
-A quieter new tab, with a view of the world. Home brings together an interactive globe, world clocks, weather, sunrise and sunset, and the Moon’s current phase. Follow the International Space Station, explore a city, or make the dashboard your own with your favorite clocks and theme.
+A quieter new tab, with a view of the world. Pale Blue Dot Tab brings together an interactive globe, world clocks, weather, sunrise and sunset, and the Moon’s current phase. Follow the International Space Station, explore a city, or make the dashboard your own with your favorite clocks and theme.
 
 ![Globe-first dashboard with local weather, Moon and world clocks](docs/preview.png)
 
-[Try Home in your browser](https://home.salsaparapizza.com/) · [Privacy policy](https://home.salsaparapizza.com/privacy.html)
+[Try Pale Blue Dot Tab in your browser](https://home.salsaparapizza.com/) · [Privacy policy](https://home.salsaparapizza.com/privacy.html)
 
 ## Install in Chrome
 
-1. Open the [release](https://github.com/cris7ian/home-new-tab/releases/tag/v1.0.0) while signed in to GitHub.
-2. Download `home-new-tab-v1.0.0.zip` and extract it to a folder you plan to keep.
+1. Open the [release](https://github.com/cris7ian/pale-blue-dot-tab/releases/tag/v1.0.1) while signed in to GitHub.
+2. Download `pale-blue-dot-tab-v1.0.1.zip` and extract it to a folder you plan to keep.
 3. Open `chrome://extensions`, enable **Developer mode**, and select **Load unpacked**.
 4. Select the extracted `extension` folder.
 5. Open a new tab and select **Keep it** if Chrome asks.
 
 To update a manual installation, replace the files in the same folder and select **Reload** in `chrome://extensions`.
 
-Choose a city for its weather and solar times, or select **Use my location** to use your device location. Chrome may show a location permission warning during installation, but Home does not read your location until you opt in. Weather, city search, and live ISS positions need an internet connection. No account or API key is needed to use Home.
+Choose a city for its weather and solar times, or select **Use my location** to use your device location. Chrome may show a location permission warning during installation, but the extension does not read your location until you opt in. Weather, city search, and live ISS positions need an internet connection. No account or API key is needed to use the extension.
 
 ## Develop
 

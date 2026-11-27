@@ -32,7 +32,7 @@ jobs:
   deploy:
     name: Deploy
     needs: check
-    if: github.repository == 'cris7ian/home-new-tab' && github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    if: github.repository_id == '1473330917' && github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     runs-on: [self-hosted, Linux, X64, home-new-tab-deploy]
     timeout-minutes: 5
     concurrency:
@@ -61,7 +61,7 @@ jobs:
           install -m 0644 experiments/store/privacy.html "$stage/privacy.html"
           printf '{"commit":"%s"}\n' "$DEPLOY_SHA" > "$stage/deployment.json"
           chmod 0644 "$stage/deployment.json"
-          latest=$(gh api repos/cris7ian/home-new-tab/git/ref/heads/main --jq .object.sha)
+          latest=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq .object.sha)
           if [[ "$latest" != "$DEPLOY_SHA" ]]; then
             echo 'A newer main commit exists; skipping deployment.'
             exit 0

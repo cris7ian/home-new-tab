@@ -35,7 +35,7 @@ def wait_frame(page):
 
 
 def check(page, design):
-    expect(page).to_have_title('Home')
+    expect(page).to_have_title('Pale Blue Dot Tab')
     expect(page.locator('html')).to_have_attribute('data-design', design)
     expect(page.locator('#local-time')).to_have_text(CLK)
     expect(page.locator('#sunrise')).to_have_text(CLK)
@@ -457,7 +457,7 @@ def website_link(browser):
         page.goto(f'{BASE}globe.html')
         link = page.get_by_role('link', name='Make this your new tab', exact=True)
         expect(link).to_be_visible()
-        expect(link).to_have_attribute('href', 'https://github.com/cris7ian/home-new-tab#install-in-chrome')
+        expect(link).to_have_attribute('href', 'https://github.com/cris7ian/pale-blue-dot-tab#install-in-chrome')
         expect(link).to_have_attribute('target', '_blank')
         expect(link).to_have_attribute('rel', 'noopener noreferrer')
         assert page.evaluate('document.documentElement.scrollWidth === innerWidth')

@@ -101,13 +101,13 @@ def main():
                 page.emulate_media(color_scheme=scheme)
                 expect(page.locator('html')).to_have_attribute('data-theme', scheme)
                 page.evaluate('new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))')
-                screenshot = out / f'home-new-tab-{scheme}.png'
+                screenshot = out / f'pale-blue-dot-tab-{scheme}.png'
                 page.screenshot(path=screenshot)
                 image = Image.open(screenshot).convert('RGB')
                 assert image.size == (1280, 800)
                 image.save(screenshot, optimize=True)
             assert not errors, errors
-    output = out / f'home-new-tab-web-store-{manifest["version"]}.zip'
+    output = out / f'pale-blue-dot-tab-web-store-{manifest["version"]}.zip'
     with ZipFile(output, 'w', ZIP_DEFLATED) as archive:
         for path in sorted(package.iterdir()):
             archive.write(path, path.name)

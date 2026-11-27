@@ -228,7 +228,7 @@ def clock_page(styles, scripts, layout, *, appearance):
 
 def web_clock_page(styles, scripts, layout, *, appearance):
     source = clock_page(styles, scripts, layout, appearance=appearance)
-    link = '<a class="eyebrow github-link" href="https://github.com/cris7ian/home-new-tab#install-in-chrome" target="_blank" rel="noopener noreferrer">Make this your new tab <span aria-hidden="true">↗</span></a>'
+    link = '<a class="eyebrow github-link" href="https://github.com/cris7ian/pale-blue-dot-tab#install-in-chrome" target="_blank" rel="noopener noreferrer">Make this your new tab <span aria-hidden="true">↗</span></a>'
     return change(source, '<div></div><div class="masthead-right">', link + '<div class="masthead-right">')
 
 
@@ -282,7 +282,7 @@ def main():
     links += '<li><a href="type.html">Type &amp; Icons</a></li>'
     links += '<li><a href="globe.html">Globe</a></li>'
     links += ''.join(f'<li><a href="globe-{name}.html">Globe · {name.title()}</a></li>' for name in ('shoulders', 'meridian', 'inline'))
-    (PREVIEW / 'index.html').write_text(f'<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Home — Proposals</title><style>body{{margin:9vh auto;width:min(80%,600px);font:24px/1.8 Georgia;background:#fafafa;color:#111}}a{{color:inherit}}li{{border-top:1px solid #ccc;padding:8px}}ul{{padding:0;list-style:none}}</style><h1>Home</h1><ul>{links}</ul></html>', encoding='utf-8')
+    (PREVIEW / 'index.html').write_text(f'<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Pale Blue Dot Tab — Proposals</title><style>body{{margin:9vh auto;width:min(80%,600px);font:24px/1.8 Georgia;background:#fafafa;color:#111}}a{{color:inherit}}li{{border-top:1px solid #ccc;padding:8px}}ul{{padding:0;list-style:none}}</style><h1>Home</h1><ul>{links}</ul></html>', encoding='utf-8')
     print('Built local proposals and the globe release (live site unchanged)')
 
 

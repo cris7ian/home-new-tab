@@ -32,8 +32,8 @@ To prepare a Store package and screenshots from a committed release:
 
 ```sh
 uv run --with playwright --with pillow python experiments/store/prepare.py \
-  --ref v1.0.0 --out experiments/artifacts/store-v1.0.0 \
+  --ref v1.0.1 --out experiments/artifacts/store-v1.0.1 \
   --chromium /path/to/chromium
 ```
 
-Upload the Store ZIP to the Developer Dashboard and submit it for review separately.
+Upload the Store ZIP to the existing listing in the Developer Dashboard and submit it for review separately. Do not create a new listing for a name change.
