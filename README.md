@@ -42,7 +42,9 @@ python3 -m unittest discover -s experiments
 uv run --with playwright python experiments/verify_globe.py --chromium /path/to/chromium
 ```
 
-The browser tests cover both the preview and the Chrome new-tab override. For hosting and release details, see [production](docs/production.md).
+The browser tests cover the shipped web layout and the Chrome new-tab override. They mock weather, city search, and ISS by default. Add `--proposals` to check alternate layouts, `--screenshots` to save images, or `--live [URL]` to check the live providers against the local preview or a deployed page.
+
+For hosting and release details, see [production](docs/production.md).
 
 ## Credits
 

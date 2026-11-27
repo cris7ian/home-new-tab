@@ -26,8 +26,8 @@ jobs:
         with:
           node-version: '24'
           package-manager-cache: false
-      - run: python3 -m unittest discover -s experiments
       - run: python3 experiments/build_globe.py
+      - run: python3 -m unittest discover -s experiments
 
   deploy:
     name: Deploy

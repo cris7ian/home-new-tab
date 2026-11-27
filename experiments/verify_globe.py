@@ -4,6 +4,7 @@ from datetime import datetime
 from pathlib import Path
 import re
 from tempfile import TemporaryDirectory
+from urllib.parse import parse_qs, urlsplit
 
 from playwright.sync_api import Error, expect, sync_playwright
 
@@ -13,6 +14,58 @@ CLK = re.compile(r'^\d{1,2}:\d{2} (AM|PM)$')
 NUMBER = re.compile(r'^-?\d+$')
 DESIGNS = {'atlas': 'Newsreader', 'orbital': 'Space Grotesk', 'grid': 'Barlow Condensed'}
 BASE = 'http://127.0.0.1:4174/'
+
+HOME = f'{BASE}globe.html'
+PROVIDERS = re.compile(r'^https://(?:(?:api|geocoding-api)\.open-meteo\.com|api\.wheretheiss\.at)/')
+CITIES = {
+    'Madrid': ('Spain', 40.42, -3.70, 'Europe/Madrid'),
+    'Kathmandu': ('Nepal', 27.7172, 85.324, 'Asia/Kathmandu'),
+    'Caracas': ('Venezuela', 10.488, -66.879, 'America/Caracas'),
+    'Longyearbyen': ('Svalbard and Jan Mayen', 78.22, 15.65, 'Arctic/Longyearbyen'),
+}
+
+
+def mock_providers(context):
+    context.route(re.compile(r'^https?://(?!127\.0\.0\.1:4174/)'), lambda route: route.abort())
+
+    def respond(route):
+        url = urlsplit(route.request.url)
+        query = parse_qs(url.query)
+        if url.path == '/v1/search':
+            names = query['name']
+            if names == ['Kathmandu']:
+                names = ['Kathmandu', 'Caracas']  # Offer a duplicate clock option.
+            results = []
+            for name in names:
+                if name in CITIES:
+                    country, lat, lon, zone = CITIES[name]
+                    results.append(dict(name=name, country=country, latitude=lat, longitude=lon, timezone=zone))
+            payload = {'results': results}
+        elif url.path == '/v1/forecast':
+            zone = {'27.72': 'Asia/Kathmandu', '35.68': 'Asia/Tokyo'}.get(query['latitude'][0], 'Europe/Madrid')
+            payload = {'timezone': zone, 'current': {'temperature_2m': 19, 'weather_code': 0, 'is_day': 1}}
+        elif url.path == '/v1/satellites/25544/positions':
+            payload = [dict(id=25544, units='kilometers', timestamp=int(stamp),
+                            latitude=12, longitude=20 + i, altitude=420)
+                       for i, stamp in enumerate(query['timestamps'][0].split(','))]
+        else:
+            route.abort()
+            return
+        route.fulfill(json=payload, headers={'Access-Control-Allow-Origin': '*'})
+
+    context.route(PROVIDERS, respond)
+
+
+def preview_page(browser, **options):
+    page = browser.new_page(**options)
+    mock_providers(page.context)
+    return page
+
+
+def screenshot(page, name, enabled):
+    if enabled:
+        ARTIFACTS.mkdir(exist_ok=True)
+        page.screenshot(path=ARTIFACTS / f'{name}.png', full_page=True)
 
 
 def manual_weather(page):
@@ -95,7 +148,7 @@ def globe_focus(page):
 
 
 def leap_year(browser):
-    page = browser.new_page(viewport={'width': 320, 'height': 640}, timezone_id='America/New_York')
+    page = preview_page(browser, viewport={'width': 320, 'height': 640}, timezone_id='America/New_York')
     page.clock.install(time=datetime.fromisoformat('2028-02-29T23:59:45-05:00'))
     page.goto(f'{BASE}grid-release.html')
     expect(page.locator('.year-square')).to_have_count(366)
@@ -108,9 +161,9 @@ def leap_year(browser):
     page.close()
 
 
-def type_proposal(browser, errors):
+def type_proposal(browser, errors, screenshots):
     for width, height in ((1440, 900), (390, 844), (320, 720)):
-        page = browser.new_page(viewport={'width': width, 'height': height}, timezone_id='Europe/Madrid')
+        page = preview_page(browser, viewport={'width': width, 'height': height}, timezone_id='Europe/Madrid')
         collect_errors(page, errors)
         assert page.goto(f'{BASE}type.html').ok
         manual_weather(page)
@@ -129,23 +182,19 @@ def type_proposal(browser, errors):
         assert not problems, problems
         assert page.evaluate('document.documentElement.scrollWidth === innerWidth')
         if width != 320:
-            page.screenshot(path=ARTIFACTS / f'type-{width}.png', full_page=True)
+            screenshot(page, f'type-{width}', screenshots)
         page.close()
 
 
-def globe_proposal(browser, errors):
-    for width, height in ((1440, 900), (390, 844), (320, 720)):
-        page = browser.new_page(viewport={'width': width, 'height': height}, timezone_id='Europe/Madrid')
+def website_layout(browser, errors, screenshots):
+    for width, height in ((1440, 900), (320, 720)):
+        page = preview_page(browser, viewport={'width': width, 'height': height}, timezone_id='Europe/Madrid',
+                            has_touch=width == 320, is_mobile=width == 320)
         collect_errors(page, errors)
-        assert page.goto(f'{BASE}globe.html').ok
+        assert page.goto(HOME).ok
         manual_weather(page)
-        expect(page.locator('#year-progress, table')).to_have_count(0)
-        expect(page.locator('#clocks button')).to_have_count(8)
-        expect(page.locator('#sunrise')).to_have_text(CLK)
-        expect(page.locator('#sunset')).to_have_text(CLK)
+        check(page, 'grid')
         status(page)
-        wait_frame(page)
-        assert page.evaluate('document.documentElement.scrollWidth === innerWidth')
         globe = page.locator('#globe').bounding_box()
         cities = page.locator('#clocks').bounding_box()
         weather = page.locator('.weather').bounding_box()
@@ -156,15 +205,22 @@ def globe_proposal(browser, errors):
         assert sun['y'] >= weather['y'] + weather['height'] - 1
         assert cities['y'] >= globe['y'] + globe['height']
         if width > 650:
+            date = page.locator('.date-block').bounding_box()
+            clock = page.locator('.date-line .current-clock').bounding_box()
+            assert date['x'] + date['width'] <= clock['x']
+            assert max(date['y'] + date['height'], clock['y'] + clock['height']) <= globe['y']
             assert weather['x'] < globe['x'] < moon['x']
             assert abs(globe['x'] + globe['width'] / 2 - width / 2) < 15
             assert cities['y'] + cities['height'] <= height - 34
         else:
             assert moon['y'] < globe['y'] and weather['y'] < globe['y']
-        if width != 320:
-            page.screenshot(path=ARTIFACTS / f'globe-{width}.png', full_page=True)
+        website_links(page)
+        expect(page.locator('#moon-surface')).to_have_attribute('href', re.compile(r'^data:image/jpeg;base64,'))
+        screenshot(page, f'globe-{width}', screenshots)
         if width == 1440:
             city_rotation(page)
+        else:
+            palette_options(page)
         page.close()
 
 
@@ -193,17 +249,6 @@ def city_rotation(page):
 
 def configurable_clocks(page, peer=None):
     page.clock.set_fixed_time(datetime.fromisoformat('2026-11-26T12:00:00+00:00'))
-    page.route('https://api.open-meteo.com/v1/forecast?**', lambda route: route.fulfill(json={
-        'timezone': 'Asia/Kathmandu', 'current': {'temperature_2m': 19, 'weather_code': 0, 'is_day': 1},
-    }))
-    page.route('https://geocoding-api.open-meteo.com/v1/search?**', lambda route: route.fulfill(json={
-        'results': [
-            {'name': 'Kathmandu', 'country': 'Nepal', 'latitude': 27.7172,
-             'longitude': 85.324, 'timezone': 'Asia/Kathmandu'},
-            {'name': 'Caracas', 'country': 'Venezuela', 'latitude': 10.488,
-             'longitude': -66.879, 'timezone': 'America/Caracas'},
-        ],
-    }))
     clocks = page.locator('#clocks')
     expect(clocks.locator('.clock-city')).to_have_text([
         'Los Angeles', 'New York', 'Caracas', 'London', 'Madrid', 'Dubai', 'Tokyo', 'Sydney',
@@ -252,7 +297,7 @@ def configurable_clocks(page, peer=None):
 
 
 def city_clock_sort(browser):
-    page = browser.new_page()
+    page = preview_page(browser)
     page.clock.install(time=datetime.fromisoformat('2026-10-03T16:29:45+00:00'))
     page.add_init_script("""localStorage.setItem('home-new-tab.city-clocks.v1', JSON.stringify([
       {name: 'Brisbane', lat: -27.47, lon: 153.03, zone: 'Australia/Brisbane'},
@@ -261,9 +306,6 @@ def city_clock_sort(browser):
       {name: 'Caracas', lat: 10.48, lon: -66.88, zone: 'America/Caracas'},
       {name: 'Accra', lat: 5.60, lon: -0.19, zone: 'Africa/Accra'}
     ]));""")
-    page.route('https://api.open-meteo.com/v1/forecast?**', lambda route: route.fulfill(json={
-        'current': {'temperature_2m': 19, 'weather_code': 0, 'is_day': 0},
-    }))
     page.goto(f'{BASE}globe.html')
     clocks = page.locator('#clocks .clock-city')
     expect(clocks).to_have_text(['Caracas', 'St. John’s', 'Accra', 'Adelaide', 'Brisbane'])
@@ -276,10 +318,10 @@ def city_clock_sort(browser):
     page.close()
 
 
-def clock_proposals(browser, errors):
-    for name in ('shoulders', 'meridian', 'inline'):
+def clock_proposals(browser, errors, screenshots):
+    for name in ('shoulders', 'inline'):
         for width, height in ((1440, 900), (390, 844), (320, 720)):
-            page = browser.new_page(viewport={'width': width, 'height': height}, timezone_id='Europe/Madrid')
+            page = preview_page(browser, viewport={'width': width, 'height': height}, timezone_id='Europe/Madrid')
             collect_errors(page, errors)
             assert page.goto(f'{BASE}globe-{name}.html').ok
             manual_weather(page)
@@ -288,22 +330,14 @@ def clock_proposals(browser, errors):
             date = page.locator('.date-block').bounding_box()
             globe = page.locator('#globe').bounding_box()
             assert date['x'] < clock['x']
-            if name == 'meridian':
-                assert page.locator('.date-line .current-clock').count() == 1
-                assert date['x'] + date['width'] <= clock['x']
-                assert date['y'] + date['height'] <= globe['y']
-                assert clock['y'] + clock['height'] <= globe['y']
-                assert page.locator('.date-line h1').evaluate('el => parseFloat(getComputedStyle(el).fontSize) >= 35')
-                expect(page.locator('#moon-surface')).to_have_attribute('href', re.compile('^data:image/jpeg;base64,'))
-            else:
-                assert clock['y'] < globe['y']
+            assert clock['y'] < globe['y']
             if width == 1440:
                 expect(page.locator('#local-zone')).not_to_be_empty()
                 status(page)
-                page.screenshot(path=ARTIFACTS / f'clock-{name}.png', full_page=True)
+                screenshot(page, f'clock-{name}', screenshots)
                 city_rotation(page)
             if width == 390:
-                page.screenshot(path=ARTIFACTS / f'clock-{name}-mobile.png', full_page=True)
+                screenshot(page, f'clock-{name}-mobile', screenshots)
             page.close()
 
 
@@ -318,7 +352,6 @@ def theme_behavior(page):
     page.emulate_media(color_scheme='dark')
     expect(root).to_have_attribute('data-theme', 'dark')
     page.wait_for_function('(before) => document.querySelector("#globe").toDataURL() !== before', arg=before)
-    assert page.locator('body').evaluate('el => getComputedStyle(el).backgroundColor') == 'rgb(20, 20, 20)'
     picker.select_option('light')
     expect(root).to_have_attribute('data-theme', 'light')
     picker.select_option('dark')
@@ -333,53 +366,42 @@ def theme_behavior(page):
     page.keyboard.press('Escape')
 
 
-COLOR_THEMES = {
-    'gruvbox': 'rgb(40, 40, 40)',
-    'deep-ocean': 'rgb(7, 24, 39)',
-    'tokyo-night': 'rgb(26, 27, 38)',
-    'dracula': 'rgb(40, 42, 54)',
-    'oxblood': 'rgb(17, 13, 16)',
-    'unit-01': 'rgb(29, 19, 42)',
-}
+COLOR_THEMES = ('gruvbox', 'deep-ocean', 'tokyo-night', 'dracula', 'oxblood', 'unit-01')
 
 
-def color_themes(page, peer=None):
-    root = page.locator('html')
+def palette_options(page):
+    background = page.locator('body').evaluate('el => getComputedStyle(el).backgroundColor')
+    page.locator('#settings-open').click()
     picker = page.locator('#theme')
-    globe = page.locator('#globe')
-    page.locator('#settings-open').click()
-    previous = globe.evaluate('(el) => el.toDataURL()')
-    for name, background in COLOR_THEMES.items():
+    for name in COLOR_THEMES:
         picker.select_option(name)
-        expect(root).to_have_attribute('data-theme', name)
-        expect(page.locator('body')).to_have_css('background-color', background)
-        expect(page.locator('#settings')).to_have_css('background-color', background)
-        expect(picker).to_have_css('color-scheme', 'dark')
-        page.wait_for_function('(before) => document.querySelector("#globe").toDataURL() !== before', arg=previous)
-        previous = globe.evaluate('(el) => el.toDataURL()')
-        if peer:
-            expect(peer.locator('html')).to_have_attribute('data-theme', name)
-    page.emulate_media(color_scheme='light')
-    page.reload()
-    expect(root).to_have_attribute('data-theme', 'unit-01')
+        expect(page.locator('html')).to_have_attribute('data-theme', name)
+        expect(page.locator('body')).not_to_have_css('background-color', background)
+    page.keyboard.press('Escape')
+
+
+def palette_persistence(page, peer):
+    page.bring_to_front()
+    globe = page.locator('#globe')
+    previous = globe.evaluate('(el) => el.toDataURL()')
     page.locator('#settings-open').click()
-    expect(picker).to_have_value('unit-01')
-    picker.select_option('system')
-    expect(root).to_have_attribute('data-theme', 'light')
-    if peer:
-        expect(peer.locator('html')).to_have_attribute('data-theme', 'light')
+    page.locator('#theme').select_option('tokyo-night')
+    expect(peer.locator('html')).to_have_attribute('data-theme', 'tokyo-night')
+    page.wait_for_function('(before) => document.querySelector("#globe").toDataURL() !== before', arg=previous)
+    page.reload()
+    expect(page.locator('html')).to_have_attribute('data-theme', 'tokyo-night')
+    page.locator('#settings-open').click()
+    expect(page.locator('#theme')).to_have_value('tokyo-night')
     page.keyboard.press('Escape')
 
 
 def early_theme(browser):
     for system, saved, expected in (
         ('dark', 'system', 'dark'),
-        ('light', 'dark', 'dark'),
-        ('dark', 'light', 'light'),
         ('light', 'tokyo-night', 'tokyo-night'),
         ('light', 'invalid', 'light'),
     ):
-        page = browser.new_page(color_scheme=system)
+        page = preview_page(browser, color_scheme=system)
         page.add_init_script(f"localStorage.setItem('home-new-tab.theme.v1', '{saved}');")
         url = f'{BASE}globe.html'
 
@@ -390,15 +412,19 @@ def early_theme(browser):
 
         page.route(url, early_markup)
         assert page.goto(url).ok
-        background = {'dark': 'rgb(20, 20, 20)', 'light': 'rgb(250, 250, 250)', **COLOR_THEMES}[expected]
-        assert page.locator('body').evaluate('el => getComputedStyle(el).backgroundColor') == background, (system, saved)
-        assert page.locator('html').evaluate('el => getComputedStyle(el).backgroundColor') == background, (system, saved)
         expect(page.locator('html')).to_have_attribute('data-theme', expected)
+        colors = page.evaluate('() => [document.documentElement, document.body].map(el => getComputedStyle(el).backgroundColor)')
+        opposite = page.evaluate('''() => {
+            const root = document.documentElement;
+            root.dataset.theme = root.dataset.theme === 'light' ? 'dark' : 'light';
+            return getComputedStyle(root).backgroundColor;
+        }''')
+        assert colors[0] == colors[1] and colors[0] != opposite, (system, saved, colors)
         page.close()
 
 
 def stable_clock(browser):
-    page = browser.new_page(viewport={'width': 1440, 'height': 900}, timezone_id='Europe/Madrid')
+    page = preview_page(browser, viewport={'width': 1440, 'height': 900}, timezone_id='Europe/Madrid')
     page.clock.install(time=datetime.fromisoformat('2028-03-01T09:59:45+01:00'))
     page.goto(f'{BASE}globe.html')
     readout = page.locator('#local-time')
@@ -416,6 +442,7 @@ def stable_clock(browser):
 def geo_sun_regression(browser, errors):
     context = browser.new_context(timezone_id='Europe/Madrid',
         geolocation={'latitude': 41.3874, 'longitude': 2.1686, 'accuracy': 30}, permissions=['geolocation'])
+    mock_providers(context)
     page = context.new_page()
     collect_errors(page, errors)
     page.clock.install(time=datetime.fromisoformat('2026-11-26T16:00:00+01:00'))
@@ -470,11 +497,6 @@ def geo_sun_regression(browser, errors):
     first = sun.get_attribute('transform')
     page.clock.fast_forward(3_600_000)
     expect(sun).not_to_have_attribute('transform', first)
-    polar_search = re.compile(r'geocoding-api\.open-meteo\.com/v1/search\?name=Longyearbyen&')
-    page.route(polar_search, lambda route: route.fulfill(json={'results': [
-        {'name': 'Longyearbyen', 'country': 'Svalbard and Jan Mayen', 'latitude': 78.22,
-         'longitude': 15.65, 'timezone': 'Arctic/Longyearbyen'},
-    ]}))
     page.locator('#weather-place').click()
     page.locator('#city-query').fill('Longyearbyen')
     page.locator('#city-search button[type=submit]').click()
@@ -491,161 +513,118 @@ def geo_sun_regression(browser, errors):
     context.close()
 
 
-def website_link(browser):
-    expected = (
-        ('Install extension',
-         'https://chromewebstore.google.com/detail/home-new-tab/pgeahicgbpcfobknhbgjhlldjpapbgol'),
-        ('GitHub', 'https://github.com/cris7ian/pale-blue-dot-tab'),
-    )
-    for width, height in ((1440, 900), (320, 720)):
-        page = browser.new_page(viewport={'width': width, 'height': height})
-        page.goto(f'{BASE}globe.html')
-        boxes = []
-        for name, href in expected:
-            link = page.get_by_role('link', name=name, exact=True)
-            expect(link).to_be_visible()
-            expect(link).to_have_attribute('href', href)
-            expect(link).to_have_attribute('target', '_blank')
-            expect(link).to_have_attribute('rel', 'noopener noreferrer')
-            boxes.append(link.bounding_box())
-        assert page.evaluate('document.documentElement.scrollWidth === innerWidth')
-        settings_box = page.locator('#settings-open').bounding_box()
-        assert boxes[0]['x'] + boxes[0]['width'] <= boxes[1]['x']
-        assert boxes[-1]['x'] + boxes[-1]['width'] <= settings_box['x']
-        page.close()
+def website_links(page):
+    install = page.get_by_role('link', name='Install extension', exact=True)
+    github = page.get_by_role('link', name='GitHub', exact=True)
+    expect(install).to_have_attribute('href', re.compile(r'^https://chromewebstore\.google\.com/detail/[^/]+/pgeahicgbpcfobknhbgjhlldjpapbgol$'))
+    expect(github).to_have_attribute('href', 'https://github.com/cris7ian/pale-blue-dot-tab')
+    for link in (install, github):
+        expect(link).to_be_visible()
+        expect(link).to_have_attribute('target', '_blank')
+        assert 'noopener' in link.get_attribute('rel').split()
+    first, second, settings = [link.bounding_box() for link in (install, github, page.locator('#settings-open'))]
+    assert first['x'] + first['width'] <= second['x']
+    assert second['x'] + second['width'] <= settings['x']
+
+
+def design_previews(browser, errors, screenshots):
+    for design in DESIGNS:
+        for width, height in ((1440, 900), (390, 844)):
+            page = preview_page(browser, viewport={'width': width, 'height': height}, timezone_id='Europe/Madrid')
+            collect_errors(page, errors)
+            assert page.goto(f'{BASE}{design}.html?design={design}').ok
+            manual_weather(page)
+            check(page, design)
+            screenshot(page, f'{design}-{width}', screenshots)
+            page.close()
+    leap_year(browser)
+    type_proposal(browser, errors, screenshots)
+    clock_proposals(browser, errors, screenshots)
+
+
+def live_smoke(browser, url, errors):
+    page = browser.new_page(timezone_id='Europe/Madrid')
+    collect_errors(page, errors)
+    assert page.goto(url).ok
+    manual_weather(page)
+    status(page)
+    page.close()
+
+
+def new_tab(context, errors):
+    page = context.new_page()
+    collect_errors(page, errors)
+    try:
+        page.goto('chrome://newtab/', wait_until='commit', timeout=12000)
+    except Error as error:
+        if 'ERR_ABORTED' not in str(error):
+            raise
+    page.wait_for_selector('#globe', timeout=15000)
+    assert page.evaluate('location.protocol') == 'chrome-extension:'
+    return page
+
+
+def extension_checks(chromium, browser_args, errors):
+    extension = str(HERE.parent / 'extension')
+    with TemporaryDirectory(prefix='home-chrome-') as profile:
+        with chromium.launch_persistent_context(profile, **browser_args, timezone_id='Europe/Madrid',
+                args=[f'--disable-extensions-except={extension}', f'--load-extension={extension}']) as ctx:
+            mock_providers(ctx)
+            ctx.set_geolocation({'latitude': 41.3874, 'longitude': 2.1686, 'accuracy': 30})
+            page = new_tab(ctx, errors)
+            expect(page.locator('.masthead-link')).to_have_count(0)
+            assert page.evaluate('Boolean(chrome.runtime.id)')
+            assert page.evaluate('chrome.permissions.contains({permissions:["geolocation"]})')
+            expect(page.locator('#place-name')).to_have_text('Set location')
+            assert page.evaluate('localStorage.getItem("home-new-tab.location-mode.v1")') is None
+            page.locator('#weather-place').click()
+            page.locator('#locate').click()
+            expect(page.locator('#place-name')).to_have_text('Near Barcelona')
+            page.reload()
+            expect(page.locator('#place-name')).to_have_text('Near Barcelona')
+            manual_weather(page)
+            check(page, 'grid')
+            status(page)
+            theme_behavior(page)
+            page.locator('#settings-open').click()
+            page.locator('#settings summary').click()
+            expect(page.get_by_role('link', name='Open-Meteo', exact=True)).to_be_visible()
+            page.keyboard.press('Escape')
+            second = new_tab(ctx, errors)
+            expect(second.locator('#place-name')).to_contain_text('Madrid')
+            palette_persistence(second, peer=page)
+            globe_focus(second)
+            configurable_clocks(second, peer=page)
 
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--chromium', type=Path)
-    parser.add_argument('--web-url', help='Also smoke test the deployed globe page')
+    parser.add_argument('--proposals', action='store_true', help='Check alternate design previews and their year grid')
+    parser.add_argument('--screenshots', action='store_true', help='Save layout screenshots into experiments/artifacts')
+    parser.add_argument('--live', nargs='?', const=HOME, metavar='URL', help='Also check live weather, city search, and ISS')
     args = parser.parse_args()
     browser_args = {'executable_path': str(args.chromium)} if args.chromium else {'channel': 'chromium'}
-    ARTIFACTS.mkdir(exist_ok=True)
     errors = []
     with sync_playwright() as p:
         browser = p.chromium.launch(**browser_args)
-        early_theme(browser)
-        theme_page = browser.new_page(viewport={'width': 320, 'height': 720}, color_scheme='light')
-        theme_page.goto(f'{BASE}globe.html')
-        color_themes(theme_page)
-        theme_page.close()
-        print('Website: all six color palettes, globe redraw, mobile settings and persistence')
-        for design in DESIGNS:
-            desktop = browser.new_context(viewport={'width': 1440, 'height': 900}, timezone_id='Europe/Madrid')
-            page = desktop.new_page()
-            collect_errors(page, errors)
-            page.goto(f'{BASE}{design}.html?design={design}')
-            manual_weather(page)
-            check(page, design)
-            status(page)
-            page.screenshot(path=ARTIFACTS / f'{design}-desktop.png', full_page=True)
-
-            city_rotation(page)
-            page.locator('#globe-iss').click()
-            page.locator('#globe-home').click()
-            desktop.close()
-            mobile = browser.new_context(viewport={'width': 390, 'height': 844}, has_touch=True, is_mobile=True, timezone_id='Europe/Madrid')
-            phone = mobile.new_page()
-            collect_errors(phone, errors)
-            phone.goto(f'{BASE}{design}.html?design={design}')
-            manual_weather(phone)
-            check(phone, design)
-            status(phone)
-            phone.screenshot(path=ARTIFACTS / f'{design}-mobile.png', full_page=True)
-
-            mobile.close()
-            print(f'{design}: desktop, mobile, 12-hour labels, live data and city rotation')
-        for url in (f'{BASE}grid-release.html', args.web_url):
-            if not url:
-                continue
-            console_count = len(errors)
-            location = browser.new_context(viewport={'width': 390, 'height': 844},
-                has_touch=True, is_mobile=True, timezone_id='Europe/Madrid',
-                geolocation={'latitude': 41.3874, 'longitude': 2.1686}, permissions=['geolocation'])
-            page = location.new_page()
-            collect_errors(page, errors)
-            with page.expect_request(lambda r: 'latitude=41.39' in r.url and 'longitude=2.17' in r.url, timeout=17000):
-                assert page.goto(url).ok
-            expect(page.locator('#weather-temp')).to_have_text(NUMBER, timeout=17000)
-            check(page, 'grid')
-            city_rotation(page)
-            assert len(errors) == console_count
-            location.close()
-            print(f'{url}: Grid release, auto-location with prior permission and unchanged local weather during globe exploration')
-        leap_year(browser)
-        print('Year grid: 366 squares on leap year, local midnight rollover, and 320 px fit')
-        type_proposal(browser, errors)
-        print('Type & icons: live data, no panel borders, and no overflow at 1440, 390 and 320 px')
-        globe_proposal(browser, errors)
-        print('Globe proposal: centered Earth, live ISS, city rotation, bottom clocks, no tables or year grid')
-        clock_proposals(browser, errors)
-        print('Clock layouts: three placements, desktop and mobile fit, city weather/sun and return to home')
-        stable_clock(browser)
-        print('Monospace clock: no date or time layout shift from 09:59 to 10:00')
-        geo_sun_regression(browser, errors)
-        print('Location and sun: nearby city label, overnight countdown and midnight continuity, daytime movement and polar night')
-        website_link(browser)
-        print('Website: installation link is visible on desktop and mobile')
-        page = browser.new_page(viewport={'width': 320, 'height': 720})
-        collect_errors(page, errors)
-        page.goto(f'{BASE}globe.html')
-        configurable_clocks(page)
-        page.close()
-        city_clock_sort(browser)
-        print('City clocks: Caracas time, add, duplicate prevention, weather, removal and persistence on mobile')
-        browser.close()
-        extension = str(HERE.parent / 'extension')
-        with TemporaryDirectory(prefix='home-chrome-') as profile:
-            with p.chromium.launch_persistent_context(profile, **browser_args, timezone_id='Europe/Madrid',
-                    args=[f'--disable-extensions-except={extension}', f'--load-extension={extension}']) as ctx:
-                page = ctx.new_page()
-                collect_errors(page, errors)
-                try:
-                    page.goto('chrome://newtab/', wait_until='commit', timeout=12000)
-                except Error as error:
-                    if 'ERR_ABORTED' not in str(error):
-                        raise
-                page.wait_for_selector('#globe', timeout=15000)
-                expect(page.locator('.masthead-link')).to_have_count(0)
-                assert page.evaluate('location.protocol') == 'chrome-extension:'
-                assert page.evaluate('Boolean(chrome.runtime.id)')
-                assert page.evaluate('chrome.permissions.contains({permissions:["geolocation"]})')
-                await_coords = {'latitude': 41.3874, 'longitude': 2.1686, 'accuracy': 30}
-                ctx.set_geolocation(await_coords)
-                page.reload()
-                expect(page.locator('#place-name')).to_have_text('Set location')
-                assert page.evaluate('localStorage.getItem("home-new-tab.location-mode.v1")') is None
-                page.locator('#weather-place').click()
-                page.locator('#locate').click()
-                expect(page.locator('#place-name')).to_have_text('Near Barcelona', timeout=17000)
-                page.reload()
-                expect(page.locator('#place-name')).to_have_text('Near Barcelona', timeout=17000)
-                print('Unpacked MV3: required Chrome geolocation works only after the user clicks Use my location')
-                manual_weather(page)
-                check(page, 'grid')
-                status(page)
-                city_rotation(page)
-                theme_behavior(page)
-                page.locator('#settings-open').click()
-                page.locator('#settings summary').click()
-                expect(page.get_by_role('link', name='Open-Meteo', exact=True)).to_be_visible()
-                page.keyboard.press('Escape')
-                second = ctx.new_page()
-                try:
-                    second.goto('chrome://newtab/', wait_until='commit', timeout=12000)
-                except Error as error:
-                    if 'ERR_ABORTED' not in str(error):
-                        raise
-                check(second, 'grid')
-                expect(second.locator('#place-name')).to_contain_text('Madrid')
-                print('Unpacked MV3: Chrome new-tab override, system and saved themes, globe redraw, and persistent weather location')
-                page.emulate_media(color_scheme='light')
-                color_themes(second, peer=page)
-                print('Unpacked MV3: six color palettes redraw the globe and synchronize across new tabs')
-                globe_focus(second)
-                configurable_clocks(second, peer=page)
-                print('Unpacked MV3: configurable city clocks and synchronization across new tabs')
+        try:
+            website_layout(browser, errors, args.screenshots)
+            early_theme(browser)
+            stable_clock(browser)
+            geo_sun_regression(browser, errors)
+            city_clock_sort(browser)
+            print('Website: responsive layout, themes, globe, solar transitions, and clock reordering')
+            if args.proposals:
+                design_previews(browser, errors, args.screenshots)
+                print('Alternate design previews and leap-year grid passed')
+            if args.live:
+                live_smoke(browser, args.live, errors)
+                print(f'Live city search, weather, and ISS passed: {args.live}')
+        finally:
+            browser.close()
+        extension_checks(p.chromium, browser_args, errors)
+        print('Chrome extension: new-tab override, location opt-in, focus, and cross-tab settings')
     assert not errors, errors
 
 

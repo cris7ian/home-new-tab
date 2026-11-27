@@ -3,17 +3,25 @@
 import os
 import subprocess
 import unittest
+from pathlib import Path
 
 from build_globe import app
 
 
 class LocalWeatherTests(unittest.TestCase):
-    def test_location_flows(self):
+    def run_dashboard(self, source, scenario):
         result = subprocess.run(
-            ['node', '-e', BROWSER_TESTS], input=app(), text=True,
+            ['node', '-e', BROWSER_TESTS, scenario], input=source, text=True,
             env={**os.environ, 'TZ': 'UTC'}, capture_output=True, check=False, timeout=10,
         )
         self.assertEqual(result.returncode, 0, result.stderr)
+
+    def test_location_flows(self):
+        self.run_dashboard(app(), 'preview')
+
+    def test_built_extension_location_opt_in(self):
+        dashboard = Path(__file__).resolve().parents[1] / 'extension/dashboard.js'
+        self.run_dashboard(dashboard.read_text(encoding='utf-8'), 'extension')
 
 
 BROWSER_TESTS = r"""
@@ -33,6 +41,7 @@ class Element {
     this.dataset = {};
     this.listeners = new Map();
     this.classList = {toggle() {}};
+    this.style = {setProperty() {}};
   }
   get textContent() { return (this.text || '') + this.children.map(node => node.textContent).join(''); }
   set textContent(text) { this.text = text; this.children = []; }
@@ -51,6 +60,7 @@ class Element {
     }
   }
   replaceChildren(...children) { this.text = ''; this.children = children; }
+  contains(node) { return this === node || this.children.some(child => child.contains?.(node)); }
   append(...children) { this.children.push(...children); }
   showModal() { this.open = true; }
   close() { this.open = false; this.emit('close'); }
@@ -101,7 +111,7 @@ function start({grant = 'prompt', extension = false, optIn = false, storage = ne
   vm.runInNewContext(app, {
     document, navigator, window, chrome, Astronomy, URL, URLSearchParams, AbortController,
     localStorage: {getItem: (key) => storage.get(key), setItem: (key, value) => storage.set(key, value)},
-    setInterval() {}, setTimeout() {}, clearTimeout() {},
+    setInterval() {}, setTimeout() {}, clearTimeout() {}, matchMedia: () => ({matches: true}),
     async fetch(url, options) {
       requests.push(url);
       if (url.pathname === '/v1/search') return {ok: true, json: async () => ({results: [
@@ -137,6 +147,20 @@ const search = async (page) => {
 };
 
 (async () => {
+  if (process.argv[1] === 'extension') {
+    const extension = start({extension: true, grant: 'granted'});
+    await flush();
+    assert.equal(extension.positions.length, 0, 'Chrome permission is not in-app consent');
+    assert.equal(extension.forecasts().length, 0);
+    extension.ui('weather-place').emit('click');
+    extension.ui('locate').emit('click');
+    assert.equal(extension.positions.length, 1);
+    gps(extension.positions[0]);
+    await flush();
+    assert.equal(extension.text('place-name'), 'Current location');
+    assert.deepEqual(extension.coords(), [['37.77', '-122.42']]);
+    return;
+  }
   const storage = new Map([[legacyKey, JSON.stringify({name: 'London', lat: 51.5, lon: -0.1, zone: 'Europe/London'})]]);
   const prompt = start({storage});
   await flush();
