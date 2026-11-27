@@ -105,6 +105,7 @@ CITY_CLOCK_SETTINGS = '''<section class="city-clock-settings" aria-labelledby="c
   <ul id="city-clock-list"></ul>
   <button type="button" id="add-city-clock" aria-haspopup="dialog">Add city</button>
 </section>'''
+WEB_STYLE = '''.github-link{display:inline-flex;align-items:center;min-height:44px;color:var(--quiet);text-underline-offset:3px}.github-link:hover{color:var(--ink)}'''
 FIRST_PAINT = '''<style>
 :root{color-scheme:light dark;--theme-paper:light-dark(#fafafa,#141414);--theme-ink:light-dark(#131313,#f3f3f3);background:var(--theme-paper)}
 :root[data-theme=light]{color-scheme:light}
@@ -225,6 +226,12 @@ def clock_page(styles, scripts, layout, *, appearance):
     return change(source, clock, readout)
 
 
+def web_clock_page(styles, scripts, layout, *, appearance):
+    source = clock_page(styles, scripts, layout, appearance=appearance)
+    link = '<a class="eyebrow github-link" href="https://github.com/cris7ian/home-new-tab" target="_blank" rel="noopener noreferrer">GitHub</a>'
+    return change(source, '<div></div><div class="masthead-right">', link + '<div class="masthead-right">')
+
+
 def main():
     EXT.mkdir(exist_ok=True)
     PREVIEW.mkdir(exist_ok=True)
@@ -258,9 +265,10 @@ def main():
     inline = '\n'.join(f'<script>\n{value}\n</script>' for value in dashboard_assets.values())
     appearance = f'<script>\n{assets["appearance.js"]}\n</script>'
     footer = '\n<!--\n' + notices.replace('--', '—') + '\n-->\n'
+    web_style = f'<style>{centered_style}\n{WEB_STYLE}</style>'
     for layout in ('shoulders', 'meridian', 'inline'):
-        (PREVIEW / f'globe-{layout}.html').write_text(clock_page(f'<style>{centered_style}</style>', inline, layout, appearance=appearance) + footer, encoding='utf-8')
-    (PREVIEW / 'globe.html').write_text(clock_page(f'<style>{centered_style}</style>', inline, 'meridian', appearance=appearance) + footer, encoding='utf-8')
+        (PREVIEW / f'globe-{layout}.html').write_text(web_clock_page(web_style, inline, layout, appearance=appearance) + footer, encoding='utf-8')
+    (PREVIEW / 'globe.html').write_text(web_clock_page(web_style, inline, 'meridian', appearance=appearance) + footer, encoding='utf-8')
     del assets['nearby.js']
     assets['dashboard.js'] = standalone_app
     assets['year.js'] = read(HERE / 'year.js')
