@@ -233,8 +233,8 @@ def web_clock_page(styles, scripts, layout, *, appearance):
     links = (
         '<div class="masthead-left">'
         f'<a class="eyebrow masthead-link" data-primary href="{STORE_URL}" target="_blank" rel="noopener noreferrer">'
-        'Add to Chrome <span aria-hidden="true">↗</span></a>'
-        '<a class="eyebrow masthead-link" href="https://github.com/cris7ian/pale-blue-dot-tab#install-in-chrome" title="Install manually from GitHub" target="_blank" rel="noopener noreferrer">'
+        'Install extension <span aria-hidden="true">↗</span></a>'
+        '<a class="eyebrow masthead-link" href="https://github.com/cris7ian/pale-blue-dot-tab" title="Pale Blue Dot Tab on GitHub" target="_blank" rel="noopener noreferrer">'
         f'{GITHUB_ICON}GitHub</a>'
         '</div>'
     )

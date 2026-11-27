@@ -493,9 +493,9 @@ def geo_sun_regression(browser, errors):
 
 def website_link(browser):
     expected = (
-        ('Add to Chrome',
+        ('Install extension',
          'https://chromewebstore.google.com/detail/home-new-tab/pgeahicgbpcfobknhbgjhlldjpapbgol'),
-        ('GitHub', 'https://github.com/cris7ian/pale-blue-dot-tab#install-in-chrome'),
+        ('GitHub', 'https://github.com/cris7ian/pale-blue-dot-tab'),
     )
     for width, height in ((1440, 900), (320, 720)):
         page = browser.new_page(viewport={'width': width, 'height': height})
