@@ -26,7 +26,7 @@ Compare its `commit` with the intended `main` commit. The website workflow does 
 
 ## Chrome extension releases
 
-The published listing is [Add to Chrome](https://chromewebstore.google.com/detail/home-new-tab/pgeahicgbpcfobknhbgjhlldjpapbgol). The website links to this listing and to the repository in the desktop masthead and the mobile footer. The README keeps the GitHub manual install as the alternative path.
+The published listing is [Add to Chrome](https://chromewebstore.google.com/detail/home-new-tab/pgeahicgbpcfobknhbgjhlldjpapbgol). The website links to this listing and to the repository in the desktop masthead and mobile footer. Safari on Mac shows only the repository link. The README includes Safari homepage setup and manual Chrome installation.
 
 The manual-install ZIP contains an `extension/` folder. The Chrome Web Store ZIP has `manifest.json` at its root. A GitHub release does not upload or submit a Store update.
 

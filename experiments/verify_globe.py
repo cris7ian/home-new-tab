@@ -547,6 +547,31 @@ def website_links(page):
         assert second['x'] + second['width'] <= settings['x']
 
 
+def safari_install_link(browser, errors):
+    mac = ('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 '
+           '(KHTML, like Gecko) Version/26.0 Safari/605.1.15')
+    iphone = ('Mozilla/5.0 (iPhone; CPU iPhone OS 26_0 like Mac OS X) AppleWebKit/605.1.15 '
+              '(KHTML, like Gecko) Version/26.0 Mobile/15E148 Safari/604.1')
+    for user_agent, width, touches, show_install in (
+        (mac, 1440, 0, False),  # Desktop masthead
+        (mac, 500, 0, False),   # Footer in a narrow desktop window
+        (mac, 1024, 5, True),   # iPad in desktop mode
+        (iphone, 390, 5, True),
+    ):
+        page = preview_page(browser, user_agent=user_agent, viewport={'width': width, 'height': 900})
+        collect_errors(page, errors)
+        page.add_init_script(f"Object.defineProperty(navigator, 'maxTouchPoints', {{value: {touches}}});")
+        assert page.goto(HOME).ok
+        if show_install:
+            website_links(page)
+        else:
+            expect(page.get_by_role('link', name='Install extension', exact=True)).to_have_count(0)
+            expect(page.get_by_role('link', name='GitHub', exact=True)).to_be_visible()
+            for link in page.locator('.masthead-link[data-primary]').all():
+                expect(link).to_have_css('display', 'none')
+        page.close()
+
+
 def design_previews(browser, errors, screenshots):
     for design in DESIGNS:
         for width, height in ((1440, 900), (390, 844)):
@@ -630,6 +655,7 @@ def main():
         browser = p.chromium.launch(**browser_args)
         try:
             website_layout(browser, errors, args.screenshots)
+            safari_install_link(browser, errors)
             early_theme(browser)
             stable_clock(browser)
             geo_sun_regression(browser, errors)

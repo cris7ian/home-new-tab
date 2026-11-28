@@ -6,6 +6,17 @@ A quieter new tab, with a view of the world. Pale Blue Dot Tab brings together a
 
 [Try Pale Blue Dot Tab in your browser](https://home.salsaparapizza.com/) · [Add to Chrome](https://chromewebstore.google.com/detail/home-new-tab/pgeahicgbpcfobknhbgjhlldjpapbgol) · [Privacy policy](https://home.salsaparapizza.com/privacy.html)
 
+## Use as your homepage and new tab in Safari on Mac
+
+No extension is needed.
+
+1. In Safari, choose **Safari → Settings → General**.
+2. Enter `https://home.salsaparapizza.com/` in the **Homepage** field.
+3. Set **New windows open with** to **Homepage**.
+4. Set **New tabs open with** to **Homepage**.
+
+See [Apple’s Safari homepage guide](https://support.apple.com/guide/safari/ibrw1020/mac) for more details.
+
 ## Install in Chrome
 
 [Add Pale Blue Dot Tab from the Chrome Web Store](https://chromewebstore.google.com/detail/home-new-tab/pgeahicgbpcfobknhbgjhlldjpapbgol). Chrome installs the extension and keeps it updated.
