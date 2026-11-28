@@ -63,7 +63,6 @@
     let iss = null, trace = null, pollTimer = null, ageTimer = null, sunTimer = null;
     let inflight = null, failed = false;
 
-    canvas.style.touchAction = 'none';
     canvas.setAttribute('aria-keyshortcuts', 'ArrowLeft ArrowRight ArrowUp ArrowDown Home');
     canvas.setAttribute('aria-description', 'World time zone boundaries and current night side. Drag or use the arrow keys to rotate. Home centers the selected city.');
     issButton?.setAttribute('aria-label', 'Follow the International Space Station');

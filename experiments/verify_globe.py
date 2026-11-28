@@ -187,9 +187,10 @@ def type_proposal(browser, errors, screenshots):
 
 
 def website_layout(browser, errors, screenshots):
-    for width, height in ((1440, 900), (320, 720)):
+    for width, height in ((1440, 900), (390, 844), (320, 720)):
+        mobile = width <= 650
         page = preview_page(browser, viewport={'width': width, 'height': height}, timezone_id='Europe/Madrid',
-                            has_touch=width == 320, is_mobile=width == 320)
+                            has_touch=mobile, is_mobile=mobile)
         collect_errors(page, errors)
         assert page.goto(HOME).ok
         manual_weather(page)
@@ -204,7 +205,7 @@ def website_layout(browser, errors, screenshots):
         assert phase.evaluate('el => getComputedStyle(el).whiteSpace === "nowrap" && el.scrollWidth <= el.clientWidth && parseFloat(getComputedStyle(el).fontSize) <= 23')
         assert sun['y'] >= weather['y'] + weather['height'] - 1
         assert cities['y'] >= globe['y'] + globe['height']
-        if width > 650:
+        if not mobile:
             date = page.locator('.date-block').bounding_box()
             clock = page.locator('.date-line .current-clock').bounding_box()
             assert date['x'] + date['width'] <= clock['x']
@@ -213,11 +214,21 @@ def website_layout(browser, errors, screenshots):
             assert abs(globe['x'] + globe['width'] / 2 - width / 2) < 15
             assert cities['y'] + cities['height'] <= height - 34
         else:
-            assert moon['y'] < globe['y'] and weather['y'] < globe['y']
+            clock = page.locator('.current-clock').bounding_box()
+            controls = page.locator('.globe-controls').bounding_box()
+            assert clock['y'] + clock['height'] < globe['y']
+            assert controls['y'] + controls['height'] <= weather['y']
+            assert weather['y'] + weather['height'] <= min(sun['y'], moon['y'])
+            assert cities['y'] >= max(sun['y'] + sun['height'], moon['y'] + moon['height'])
+            assert weather['y'] + weather['height'] < height
+            expect(page.locator('#globe')).to_have_css('touch-action', 'pan-y pinch-zoom')
+            for selector in ('#settings-open', '#weather-place', '#globe-home', '#globe-iss'):
+                target = page.locator(selector).bounding_box()
+                assert target['height'] >= 44
         website_links(page)
         expect(page.locator('#moon-surface')).to_have_attribute('href', re.compile(r'^data:image/jpeg;base64,'))
         screenshot(page, f'globe-{width}', screenshots)
-        if width == 1440:
+        if width != 320:
             city_rotation(page)
         else:
             palette_options(page)
@@ -522,9 +533,18 @@ def website_links(page):
         expect(link).to_be_visible()
         expect(link).to_have_attribute('target', '_blank')
         assert 'noopener' in link.get_attribute('rel').split()
-    first, second, settings = [link.bounding_box() for link in (install, github, page.locator('#settings-open'))]
+    first, second = [link.bounding_box() for link in (install, github)]
     assert first['x'] + first['width'] <= second['x']
-    assert second['x'] + second['width'] <= settings['x']
+    if page.evaluate('innerWidth') <= 650:
+        expect(page.locator('.masthead-left')).not_to_be_visible()
+        footer = page.locator('.mobile-links').bounding_box()
+        clocks = page.locator('#clocks').bounding_box()
+        assert footer['y'] >= clocks['y'] + clocks['height']
+        assert min(first['y'], second['y']) >= footer['y']
+    else:
+        expect(page.locator('.mobile-links')).not_to_be_visible()
+        settings = page.locator('#settings-open').bounding_box()
+        assert second['x'] + second['width'] <= settings['x']
 
 
 def design_previews(browser, errors, screenshots):

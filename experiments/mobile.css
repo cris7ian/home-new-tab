@@ -1,0 +1,107 @@
+/* Narrow website: time and Earth first, with local conditions below the globe. */
+.mobile-links { display: none; }
+
+@media (max-width: 650px) {
+  html[data-web] .sheet {
+    margin-inline: max(18px, env(safe-area-inset-left)) max(18px, env(safe-area-inset-right));
+    padding-block: max(4px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-bottom));
+  }
+  html[data-web] .masthead { justify-content: flex-end; }
+  html[data-web] .masthead-left { display: none; }
+  html[data-web] main { justify-content: flex-start; }
+
+  html[data-web] .date-line {
+    flex-direction: column-reverse;
+    align-items: center;
+    gap: 10px;
+    padding: 0 0 4px;
+  }
+  html[data-web] .current-clock { flex-direction: row; align-items: baseline; gap: 8px; }
+  html[data-web] .local-time { font-size: clamp(38px, 11vw, 60px); }
+  html[data-web] .date-block { display: flex; align-items: baseline; gap: .6em; color: var(--quiet); }
+  html[data-web] .date-meta { padding: 0; }
+  html[data-web] #year { display: none; }
+  html[data-web] .date-line h1 {
+    margin: 0;
+    font: inherit;
+    font-size: 10px;
+    letter-spacing: .08em;
+  }
+  html[data-web] .date-line h1 em { letter-spacing: inherit; }
+
+  html[data-web] .observatory {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: auto;
+    gap: 0 16px;
+  }
+  html[data-web] .atlas { grid-area: 1 / 1 / auto / -1; }
+  html[data-web] .atlas .map-frame { padding: 0; border: 0; }
+  html[data-web] #globe-stage { height: clamp(250px, 91vw, 420px); }
+  /* A vertical swipe scrolls the page. Horizontal drags still rotate Earth. */
+  html[data-web] #globe { touch-action: pan-y pinch-zoom; }
+  html[data-web] .globe-controls { margin-top: -8px; }
+
+  html[data-web] .local-panels { display: contents; }
+  html[data-web] .observatory .local-panels > .weather {
+    grid-area: 2 / 1 / auto / -1;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    margin-top: 10px;
+    padding: 0 0 10px;
+    border-block: 1px solid var(--faint);
+  }
+  html[data-web] .weather .section-line { display: none; }
+  html[data-web] .weather-meta {
+    order: -1;
+    min-width: 0;
+    grid-template-rows: 44px auto;
+  }
+  html[data-web] #weather-place {
+    grid-row: 1;
+    align-items: flex-end;
+    padding-bottom: 4px;
+    font-size: 12px;
+  }
+  html[data-web] #weather-condition { white-space: normal; overflow-wrap: anywhere; }
+  html[data-web] .local-panels .weather-row { margin: 0; }
+  html[data-web] .local-panels .weather-meta { margin: 0; }
+  html[data-web] .local-panels .temperature { font-size: 34px; }
+  html[data-web] .local-panels .degrees { margin-top: 4px; font-size: 10px; }
+  html[data-web] #weather-icon { width: 28px; height: 28px; margin: 0; }
+
+  html[data-web] :is(.local-panels > .sun, .sky > .moon) {
+    grid-row: 3;
+    min-width: 0;
+    width: 100%;
+    margin-top: 18px;
+    padding: 0;
+  }
+  html[data-web] .local-panels > .sun { grid-column: 1; }
+  html[data-web] .sky > .moon { grid-column: 2; }
+  html[data-web] .sun .section-line { display: flex; }
+  html[data-web] :is(.sun, .sky > .moon) .section-line { min-height: 22px; color: var(--quiet); }
+  html[data-web] .local-panels .solar-art { width: 100%; height: 46px; margin: 0 0 4px; }
+  html[data-web] .local-panels .sun-times { margin-inline: 0; }
+  html[data-web] .sky .moon-row { min-height: 0; margin: 0; }
+  html[data-web] .lunar-art { width: 58px; }
+  html[data-web] .moon-phase { font-size: 16px; }
+  html[data-web] .moon-illuminated { margin-top: 4px; }
+
+  html[data-web] #clocks {
+    grid-template-columns: repeat(min(4, var(--clock-count, 4)), minmax(0, 1fr));
+    margin-top: 18px;
+    padding-top: 10px;
+    border-top: 1px solid var(--faint);
+  }
+  html[data-web] .clock-city { font-size: 9px; }
+  html[data-web] .mobile-links {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0 16px;
+    margin-top: 16px;
+    border-top: 1px solid var(--faint);
+  }
+}

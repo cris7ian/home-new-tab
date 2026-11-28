@@ -231,14 +231,17 @@ def clock_page(styles, scripts, layout, *, appearance):
 def web_clock_page(styles, scripts, layout, *, appearance):
     source = clock_page(styles, scripts, layout, appearance=appearance)
     links = (
-        '<div class="masthead-left">'
         f'<a class="eyebrow masthead-link" data-primary href="{STORE_URL}" target="_blank" rel="noopener noreferrer">'
         'Install extension <span aria-hidden="true">↗</span></a>'
         '<a class="eyebrow masthead-link" href="https://github.com/cris7ian/pale-blue-dot-tab" title="Pale Blue Dot Tab on GitHub" target="_blank" rel="noopener noreferrer">'
         f'{GITHUB_ICON}GitHub</a>'
-        '</div>'
     )
-    return change(source, '<div></div><div class="masthead-right">', links + '<div class="masthead-right">')
+    if layout == 'meridian':
+        source = change(source, '<html lang="en"', '<html lang="en" data-web="true"')
+        footer = f'<footer class="mobile-links">{links}</footer>'
+        source = change(source, '  </main>', f'  </main>\n  {footer}')
+    return change(source, '<div></div><div class="masthead-right">',
+        f'<div class="masthead-left">{links}</div><div class="masthead-right">')
 
 
 def main():
@@ -274,7 +277,7 @@ def main():
     inline = '\n'.join(f'<script>\n{value}\n</script>' for value in dashboard_assets.values())
     appearance = f'<script>\n{assets["appearance.js"]}\n</script>'
     footer = '\n<!--\n' + notices.replace('--', '—') + '\n-->\n'
-    web_style = f'<style>{centered_style}\n{WEB_STYLE}</style>'
+    web_style = f'<style>{centered_style}\n{WEB_STYLE}\n{read(HERE / "mobile.css")}</style>'
     for layout in ('shoulders', 'meridian', 'inline'):
         (PREVIEW / f'globe-{layout}.html').write_text(web_clock_page(web_style, inline, layout, appearance=appearance) + footer, encoding='utf-8')
     (PREVIEW / 'globe.html').write_text(web_clock_page(web_style, inline, 'meridian', appearance=appearance) + footer, encoding='utf-8')
